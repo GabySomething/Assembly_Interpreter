@@ -64,15 +64,6 @@ except FileNotFoundError:
 
 Code = Code.upper()
 
-# Code = Code.replace(",", "")
-# lines = Code.split("\n")
-# for l in lines:
-#     if len(l) == 0:
-#         continue
-#     elif len(l.strip()) == 0:
-#         continue
-#     print(l)
-
 class TokenType(E):
     INTEGER = "INTEGER"
     INSTRUCTION = "INSTRUCTION"
@@ -213,12 +204,12 @@ class Interpreter(object):
                 tokens += self.get_tokens_in_list(words[1:], line_number, TokenType.REGISTER, TokenType.INTEGER,
                                                   TokenType.VARIABLE, save_errors=save_errors)
                 tokens = self.set_origin_in_list(tokens, origin)
-                origin += 2  ################
+                origin += 2
             elif first_token_type == TokenType.LIST_ASSIGN:
                 tokens.append(Token(words[0], first_token_type, -2))
                 tokens += self.get_tokens_in_list(words[1:], line_number, TokenType.INTEGER, save_errors=save_errors)
                 tokens = self.set_origin_in_list(tokens, origin)
-                origin += 1  ################
+                origin += 1
             elif first_token_type == TokenType.ORG:
                 if len(words) != 2:
                     self.error("Invalid token, origin not set correctly", line_number, save_errors)
@@ -237,10 +228,7 @@ class Interpreter(object):
             next_tokens: list = words[1:]
             first_token_type = self.token_type(words[0])
             if first_token_type == TokenType.LABEL:
-                # if origin % 2 != 0:
-                #     origin += 1
                 tokens.append(Token(words[0].replace(":", ""), TokenType.LABEL, origin))
-                # origin += 2  ################
                 if len(words) >= 3:
                     token_type = self.token_type(words[1])
                     if token_type != TokenType.INSTRUCTION:
@@ -266,11 +254,10 @@ class Interpreter(object):
                     tokens.append(Token(words[1], TokenType.LIST_ASSIGN))
                     integers = self.get_tokens_in_list(words[2:], line_number, TokenType.INTEGER,
                                                        save_errors=save_errors)
-                    # self.variables[words[0]] = [integer.value for integer in integers]
                     bits_used: int = len(integers)
                     tokens += integers
                     tokens = self.set_origin_in_list(tokens, origin)
-                    origin += bits_used  ################
+                    origin += bits_used
                 else:
                     self.error("Invalid token, you must assign the variable with the instruction db", line_number,
                                save_errors)
@@ -288,7 +275,6 @@ class Interpreter(object):
                     tokens += self.get_tokens_in_list(words[2:], line_number, TokenType.INTEGER,
                                                       save_errors=save_errors, is_constant=True)
                     tokens = self.set_origin_in_list(tokens, origin)
-                    # origin += 1  ################
                 else:
                     self.error("Invalid token, after declaring const, you must declare a variable name", line_number,
                                save_errors)
@@ -297,94 +283,6 @@ class Interpreter(object):
             self.error("Bad formatting", line_number, save_errors)
             return None, origin
         return tokens, origin
-
-    # def make_tokens(self):
-    #     token_lines: list = list()
-    #     origin: int = 0
-    #     for i in range(len(self.lines)):
-    #         l: str = self.lines[i]
-    #         tokens: list = list()
-    #         if l[0] == " ":
-    #             words = [w.strip() for w in l.split()]
-    #             next_tokens: list = l[1:]
-    #             first_token_type = self.token_type(words[0])
-    #             if first_token_type == TokenType.INSTRUCTION:
-    #                 if origin % 2 != 0:
-    #                     origin += 1
-    #                 index: int = instructions.index(words[0])
-    #                 tokens.append(Token(words[0], first_token_type, itype[index]))
-    #                 tokens += self.get_tokens_in_list(words[1:], i, TokenType.REGISTER, TokenType.INTEGER,
-    #                                                   TokenType.VARIABLE)
-    #                 tokens = self.set_origin_in_list(tokens, origin)
-    #                 origin += 2  ################
-    #             elif first_token_type == TokenType.LIST_ASSIGN:
-    #                 tokens.append(Token(words[0], first_token_type, -2))
-    #                 tokens += self.get_tokens_in_list(words[1:], i, TokenType.INTEGER)
-    #                 tokens = self.set_origin_in_list(tokens, origin)
-    #                 origin += 1  ################
-    #             elif first_token_type == TokenType.ORG:
-    #                 if len(words) != 2:
-    #                     self.error("Invalid token, origin not set correctly", i)
-    #                     token_lines.append(None)
-    #                     continue
-    #                 org: int = int(words[1], 16)
-    #                 origin = org
-    #                 tokens.append(Token(words[0], first_token_type, org))
-    #                 tokens.append(Token(org, TokenType.INTEGER, org))
-    #             else:
-    #                 self.error("Invalid token, the second column is only for instructions", i)
-    #                 token_lines.append(None)
-    #                 continue
-    #         else:
-    #             words = [w.strip() for w in l.split()]
-    #             next_tokens: list = words[1:]
-    #             first_token_type = self.token_type(words[0])
-    #             if first_token_type == TokenType.LABEL:
-    #                 if origin % 2 != 0:
-    #                     origin += 1
-    #                 tokens.append(Token(words[0].replace(":", ""), TokenType.LABEL, origin))
-    #                 origin += 2  ################
-    #                 # continue
-    #             elif first_token_type == TokenType.VARIABLE:
-    #                 if len(words) < 3:
-    #                     self.error("Invalid token, too few arguments", i)
-    #                     token_lines.append(None)
-    #                     continue
-    #                 if words[1] == "db":
-    #                     tokens.append(Token(words[0], first_token_type))
-    #                     tokens.append(Token(words[1], TokenType.LIST_ASSIGN))
-    #                     integers = self.get_tokens_in_list(words[2:], i, TokenType.INTEGER)
-    #                     # self.variables[words[0]] = [integer.value for integer in integers]
-    #                     tokens += integers
-    #                     tokens = self.set_origin_in_list(tokens, origin)
-    #                     origin += 1  ################
-    #                 else:
-    #                     self.error("Invalid token, you must assign the variable with the instruction db", i)
-    #                     token_lines.append(None)
-    #                     continue
-    #             elif first_token_type == TokenType.CONST_ASSIGN:
-    #                 if len(words) < 3:
-    #                     self.error("Invalid token, too few arguments", i)
-    #                     token_lines.append(None)
-    #                     continue
-    #                 if self.token_type(words[1]) == TokenType.VARIABLE:
-    #                     tokens.append(Token(words[0], first_token_type))
-    #                     tokens.append(Token(words[1], TokenType.VARIABLE))
-    #                     tokens += self.get_tokens_in_list(words[2:], i, TokenType.INTEGER)
-    #                     tokens = self.set_origin_in_list(tokens, origin)
-    #
-    #                     origin += 1  ################
-    #                 else:
-    #                     self.error("Invalid token, after declaring const, you must declare a variable name", i)
-    #                     token_lines.append(None)
-    #                     continue
-    #         if len(tokens) <= 0:
-    #             self.error("No tokens found", i)
-    #             token_lines.append(None)
-    #             continue
-    #         token_lines.append(tokens)
-    #     self.token_lines = token_lines
-    #     return token_lines
 
     def make_tokens_2(self, save_errors: bool = True):
         token_lines: list = list()
@@ -403,7 +301,6 @@ class Interpreter(object):
                 self.variables[tokens[1].value] = tokens[2].value
             elif tokens[0].TokenType == TokenType.LABEL:
                 self.variables[tokens[0].value] = tokens[0].org
-            # print(tokens)
             token_lines.append(tokens)
         self.token_lines = token_lines
         return token_lines
@@ -439,11 +336,9 @@ class Interpreter(object):
                         opcode = instructions.index(token.value)
                         decimal_line.append(opcode)
                     if token.TokenType == TokenType.VARIABLE:
-                        # decimal_line.append(token.org)
                         var = self.get_variable(token.value)
                         if type(var) == list:
                             decimal_line.append(int(str(var[0]), 16))
-                            # decimal_line += [int(str(v), 16) for v in var]
                         else:
                             if type(var) == str:
                                 var = int(var, 16)
@@ -472,9 +367,9 @@ class Interpreter(object):
                 self.exit_system()
             binary_line: list = list()
             instr_format: int = itype[line[0]]
-            bits: int = 16  ##bits
-            binary_line.append(binary(line[0], 5))  ##4 bits????
-            bits -= 5  ##4 bits?
+            bits: int = 16
+            binary_line.append(binary(line[0], 5))
+            bits -= 5
             if instr_format == 1:
                 for number in line[1:]:
                     binary_number = binary(number, 3)
