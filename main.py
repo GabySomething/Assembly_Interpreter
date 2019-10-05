@@ -1,5 +1,5 @@
 import re
-from enum import Enum as E
+from enum import Enum
 
 
 def sliceAssig(l: list, lower: int, upper: int, value) -> list:
@@ -48,13 +48,13 @@ argument_types: list = ["r,a", "r,c", "r", "r,a", "r", "r,r", "r,r", "r,r,r", "r
                         "r,r,r", "r,r", "r,r", "r,r,r", "r,r,r", "r,r,r", "r,r,r", "r", "a", "r", "a", "r,a", "r,r",
                         "r,r", "r,r", "r,r", "0", "a", "0"]
 
-itype: list = [1] * len(instructions)
-itype = sliceAssig(itype, 0, 11, 2)
-itype[21] = 3
-itype[22] = 3
-itype[23] = 3
-itype[24] = 2
-itype[30] = 3
+instruction_format: list = [1] * len(instructions)
+instruction_format = sliceAssig(instruction_format, 0, 11, 2)
+instruction_format[21] = 3
+instruction_format[22] = 3
+instruction_format[23] = 3
+instruction_format[24] = 2
+instruction_format[30] = 3
 Code = ""
 try:
     Code = open(input("Please specify file name: "), "r").read()
@@ -64,7 +64,8 @@ except FileNotFoundError:
 
 Code = Code.upper()
 
-class TokenType(E):
+
+class TokenType(Enum):
     INTEGER = "INTEGER"
     INSTRUCTION = "INSTRUCTION"
     LABEL = "LABEL"
@@ -77,7 +78,8 @@ class TokenType(E):
 
 
 class Token(object):
-    def __init__(self, value, TokenType: TokenType, org: int = -1, form: int = -1, constant: bool = False, line_number: int = -1):
+    def __init__(self, value, TokenType: TokenType, org: int = -1, form: int = -1, constant: bool = False,
+                 line_number: int = -1):
         self.value = value
         self.org = org
         self.form = form
@@ -108,17 +110,17 @@ class Interpreter(object):
         self.lines: list = list()
         self.token_lines = list()
         lines = text.replace(",", "").split("\n")
-        for l in lines:
-            l: str = l
-            if "//" in l:
-                l = l[:l.index("//")]
-            if len(l) == 0:
+        for line in lines:
+            line: str = line
+            if "//" in line:
+                line = line[:line.index("//")]
+            if len(line) == 0:
                 continue
-            elif len(l.strip()) == 0:
+            elif len(line.strip()) == 0:
                 continue
-            if l.startswith("//"):
+            if line.startswith("//"):
                 continue
-            self.lines.append(l)
+            self.lines.append(line)
         self.current_line: int = 0
 
     def token_type(self, word: str):
@@ -139,10 +141,10 @@ class Interpreter(object):
                 return TokenType.REGISTER
         return TokenType.VARIABLE
 
-    def get_tokens_in_list(self, l: list, line_number, *Token_Type: TokenType, save_errors: bool = True,
+    def get_tokens_in_list(self, token_list: list, line_number, *Token_Type: TokenType, save_errors: bool = True,
                            is_constant: bool = False):
         tokens: list = list()
-        for word in l:
+        for word in token_list:
             word: str = word
             if isA(self.token_type(word), *Token_Type):
                 t: TokenType = self.token_type(word)
@@ -194,13 +196,12 @@ class Interpreter(object):
         tokens: list = list()
         if line[0] == " ":
             words = [w.strip() for w in line.split()]
-            next_tokens: list = line[1:]
             first_token_type = self.token_type(words[0])
             if first_token_type == TokenType.INSTRUCTION:
                 if origin % 2 != 0:
                     origin += 1
                 index: int = instructions.index(words[0])
-                tokens.append(Token(words[0], first_token_type, itype[index]))
+                tokens.append(Token(words[0], first_token_type, instruction_format[index]))
                 tokens += self.get_tokens_in_list(words[1:], line_number, TokenType.REGISTER, TokenType.INTEGER,
                                                   TokenType.VARIABLE, save_errors=save_errors)
                 tokens = self.set_origin_in_list(tokens, origin)
@@ -225,7 +226,6 @@ class Interpreter(object):
                 return None, origin
         else:
             words = [w.strip() for w in line.split()]
-            next_tokens: list = words[1:]
             first_token_type = self.token_type(words[0])
             if first_token_type == TokenType.LABEL:
                 tokens.append(Token(words[0].replace(":", ""), TokenType.LABEL, origin))
@@ -238,12 +238,13 @@ class Interpreter(object):
                         if origin % 2 != 0:
                             origin += 1
                         tokens.append(
-                            Token(words[1], TokenType.INSTRUCTION, origin, itype[instructions.index(words[1])]))
+                            Token(words[1], TokenType.INSTRUCTION, origin,
+                                  instruction_format[instructions.index(words[1])]))
                     tokens += self.get_tokens_in_list(words[2:], line_number, TokenType.REGISTER, TokenType.INTEGER,
                                                       TokenType.VARIABLE, save_errors=save_errors)
                     tokens = self.set_origin_in_list(tokens, origin)
                     origin += 2
-                elif len(words) > 1 and len(words) < 3:
+                elif 1 < len(words) < 3:
                     self.error("Not enough arguments", line_number, save_errors)
             elif first_token_type == TokenType.VARIABLE:
                 if len(words) < 3:
@@ -312,11 +313,11 @@ class Interpreter(object):
             return False
         return len(self.errors) == 0
 
-    def exit_system(self,code: int=1):
-        for k in self.warnings:
-            print(self.warnings.get(k))
-        for k in self.errors:
-            print(self.errors.get(k))
+    def exit_system(self, code: int = 1):
+        for key in self.warnings:
+            print(self.warnings.get(key))
+        for key in self.errors:
+            print(self.errors.get(key))
         exit(code)
 
     def to_decimal(self):
@@ -343,7 +344,7 @@ class Interpreter(object):
                             if type(var) == str:
                                 var = int(var, 16)
                             if var is None:
-                                self.error("Variable "+token.value+" is not defined")
+                                self.error("Variable " + token.value + " is not defined")
                                 self.exit_system()
                             decimal_line.append(var)
                     if token.TokenType == TokenType.INTEGER or token.TokenType == TokenType.REGISTER:
@@ -366,7 +367,7 @@ class Interpreter(object):
             if line is None:
                 self.exit_system()
             binary_line: list = list()
-            instr_format: int = itype[line[0]]
+            instr_format: int = instruction_format[line[0]]
             bits: int = 16
             binary_line.append(binary(line[0], 5))
             bits -= 5
@@ -388,7 +389,6 @@ class Interpreter(object):
                     bits = 0
             if instr_format == 3:
                 binary_line.append(binary(line[1], bits))
-                bits = 0
             binary_lines.append(binary_line)
         return binary_lines
 
@@ -447,14 +447,14 @@ class Interpreter(object):
         return [hex_to_bin(line, 16) for line in hex_lines]
 
 
-lex: Interpreter = Interpreter(Code)
-lex.instruction_check()
-for k in lex.warnings:
-    print(lex.warnings.get(k))
+inter: Interpreter = Interpreter(Code)
+inter.instruction_check()
+for key in inter.warnings:
+    print(inter.warnings.get(key))
 
-for k in lex.errors:
-    print(lex.errors.get(k))
+for key in inter.errors:
+    print(inter.errors.get(key))
 output = open("Output.obj", "w+")
-output.write("\n".join(lex.to_hex()))
+output.write("\n".join(inter.to_hex()))
 print("Hex code written to Output.obj")
 output.close()
