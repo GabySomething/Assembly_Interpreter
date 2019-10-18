@@ -1,7 +1,6 @@
-    org 0
+    org 30
     JMPADDR start
 valor1 db 5, 7, 8
-//Jugo de china.exe
 valor2 db 7
 mayor db 0
 const ten 0A

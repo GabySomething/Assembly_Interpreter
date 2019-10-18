@@ -63,7 +63,7 @@ except FileNotFoundError:
     exit(1)
 
 Code = Code.upper()
-
+memory = [0]*256
 
 class TokenType(Enum):
     INTEGER = "INTEGER"
@@ -320,6 +320,42 @@ class Interpreter(object):
             print(self.errors.get(key))
         exit(code)
 
+    def to_memory(self):
+        memory_line: list = [[]]*256
+        if not self.is_clean():
+            return None
+        for line in self.token_lines:
+            if line is not None:
+                if any(
+                        token.TokenType == TokenType.CONST_ASSIGN or token.TokenType == TokenType.LIST_ASSIGN or token.TokenType == TokenType.LABEL or token.TokenType == TokenType.ORG
+                        for token in line):
+                    continue
+                for token in line:
+                    token: Token = token
+                    addr = int(token.org)
+                    if token.TokenType == TokenType.INSTRUCTION:
+                        opcode = instructions.index(token.value)
+                        memory_line[addr] = [opcode]
+                    if token.TokenType == TokenType.VARIABLE:
+                        var = self.get_variable(token.value)
+                        if type(var) == list:
+                            memory_line[addr].append(int(str(var[0]), 16))
+                        else:
+                            if type(var) == str:
+                                var = int(var, 16)
+                            if var is None:
+                                self.error("Variable " + token.value + " is not defined")
+                                self.exit_system()
+                            memory_line[addr].append(var)
+                    if token.TokenType == TokenType.INTEGER or token.TokenType == TokenType.REGISTER:
+                        var = token.value
+                        if type(var) == str:
+                            var = int(var, 16)
+                        memory_line[addr].append(var)
+
+        return [x if len(x)>0 else [0] for x in memory_line]
+
+
     def to_decimal(self):
         decimal_lines: list = list()
         if not self.is_clean():
@@ -357,6 +393,44 @@ class Interpreter(object):
         if decimal_lines is None:
             self.exit_system()
         return decimal_lines
+
+    def to_bin_list2(self):
+        decimal_lines: list = self.to_memory()
+        binary_lines: list = list()
+        if decimal_lines is None:
+            self.exit_system()
+        for line in decimal_lines:
+            if line is None:
+                self.exit_system()
+            bits: int = 16
+            binary_line: list = list()
+            if len(line) == 1 and line[0] == 0:
+                binary_line = ["".zfill(bits)]
+                binary_lines.append(binary_line)
+                continue
+            instr_format: int = instruction_format[line[0]]
+            binary_line.append(binary(line[0], 5))
+            bits -= 5
+            if instr_format == 1:
+                for number in line[1:]:
+                    binary_number = binary(number, 3)
+                    binary_line.append(binary_number)
+                    bits -= len(binary_number)
+                if bits > 0:
+                    binary_line.append("".zfill(bits))
+                    bits = 0
+            if instr_format == 2:
+                for number in line[1:]:
+                    binary_number = binary(number, 3)
+                    binary_line.append(binary_number)
+                    bits -= len(binary_number)
+                if bits > 0:
+                    binary_line.append("".zfill(bits))
+                    bits = 0
+            if instr_format == 3:
+                binary_line.append(binary(line[1], bits))
+            binary_lines.append(binary_line)
+        return binary_lines
 
     def to_bin_list(self):
         decimal_lines: list = self.to_decimal()
@@ -443,6 +517,9 @@ class Interpreter(object):
     def to_hex(self):
         return [bin_to_hex("".join(line)) for line in self.to_bin_list()]
 
+    def to_hex2(self):
+        return [bin_to_hex("".join(line),4) for line in self.to_bin_list2()]
+
     def from_hex(self, hex_lines: list):
         return [hex_to_bin(line, 16) for line in hex_lines]
 
@@ -451,7 +528,7 @@ inter: Interpreter = Interpreter(Code)
 inter.instruction_check()
 for key in inter.warnings:
     print(inter.warnings.get(key))
-
+print(*inter.to_hex2(),sep="\n")
 for key in inter.errors:
     print(inter.errors.get(key))
 output = open("Output.obj", "w+")
