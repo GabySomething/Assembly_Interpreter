@@ -55,14 +55,15 @@ instruction_format[22] = 3
 instruction_format[23] = 3
 instruction_format[24] = 2
 instruction_format[30] = 3
-Code = ""
-try:
-    Code = open(input("Please specify file name: "), "r").read()
-except FileNotFoundError:
-    print("File does not exist!")
-    exit(1)
-
-Code = Code.upper()
+# Code = ""
+# try:
+#     Code = open(input("Please specify file name: "), "r").read()
+# except FileNotFoundError:
+#     print("File does not exist!")
+#     exit(1)
+# Code =
+#
+# Code = Code.upper()
 memory = [0]*256
 
 class TokenType(Enum):
@@ -524,14 +525,14 @@ class Interpreter(object):
         return [hex_to_bin(line, 16) for line in hex_lines]
 
 
-inter: Interpreter = Interpreter(Code)
-inter.instruction_check()
-for key in inter.warnings:
-    print(inter.warnings.get(key))
-print(*inter.to_hex2(),sep="\n")
-for key in inter.errors:
-    print(inter.errors.get(key))
-output = open("Output.obj", "w+")
-output.write("\n".join(inter.to_hex()))
-print("Hex code written to Output.obj")
-output.close()
+# inter: Interpreter = Interpreter(Code)
+# inter.instruction_check()
+# for key in inter.warnings:
+#     print(inter.warnings.get(key))
+# print(*inter.to_hex2(),sep="\n")
+# for key in inter.errors:
+#     print(inter.errors.get(key))
+# output = open("Output.obj", "w+")
+# output.write("\n".join(inter.to_hex()))
+# print("Hex code written to Output.obj")
+# output.close()
