@@ -104,13 +104,15 @@ class Interpreter(object):
     warnings = {}
     token_lines: list = list()
     variables = {}
+    dead = False
 
     def __init__(self, text: str):
         self.text = text
+        self.dead = False
         self.errors = {}
         self.lines: list = list()
         self.token_lines = list()
-        lines = text.replace(",", "").split("\n")
+        lines = text.replace(",", " ").split("\n") ##hmmmmmmmmmmmm
         for line in lines:
             line: str = line
             if "//" in line:
@@ -195,7 +197,7 @@ class Interpreter(object):
 
     def get_tokens_from_line(self, line: str, line_number: int = -1, origin: int = 0, save_errors: bool = True):
         tokens: list = list()
-        if line[0] == " ":
+        if line[0] == " " or line[0] == "\t":
             words = [w.strip() for w in line.split()]
             first_token_type = self.token_type(words[0])
             if first_token_type == TokenType.INSTRUCTION:
@@ -319,7 +321,8 @@ class Interpreter(object):
             print(self.warnings.get(key))
         for key in self.errors:
             print(self.errors.get(key))
-        exit(code)
+        self.dead = True
+        # exit(code)
 
     def to_memory(self):
         memory_line: list = [[]]*256
@@ -347,6 +350,8 @@ class Interpreter(object):
                             if var is None:
                                 self.error("Variable " + token.value + " is not defined")
                                 self.exit_system()
+                                if self.dead:
+                                    return
                             memory_line[addr].append(var)
                     if token.TokenType == TokenType.INTEGER or token.TokenType == TokenType.REGISTER:
                         var = token.value
@@ -383,6 +388,8 @@ class Interpreter(object):
                             if var is None:
                                 self.error("Variable " + token.value + " is not defined")
                                 self.exit_system()
+                                if self.dead:
+                                    return
                             decimal_line.append(var)
                     if token.TokenType == TokenType.INTEGER or token.TokenType == TokenType.REGISTER:
                         var = token.value
@@ -393,6 +400,8 @@ class Interpreter(object):
                 decimal_lines.append(decimal_line)
         if decimal_lines is None:
             self.exit_system()
+            if self.dead:
+                return
         return decimal_lines
 
     def to_bin_list2(self):
@@ -400,9 +409,13 @@ class Interpreter(object):
         binary_lines: list = list()
         if decimal_lines is None:
             self.exit_system()
+            if self.dead:
+                return
         for line in decimal_lines:
             if line is None:
                 self.exit_system()
+                if self.dead:
+                    return
             bits: int = 16
             binary_line: list = list()
             if len(line) == 1 and line[0] == 0:
@@ -438,9 +451,13 @@ class Interpreter(object):
         binary_lines: list = list()
         if decimal_lines is None:
             self.exit_system()
+            if self.dead:
+                return
         for line in decimal_lines:
             if line is None:
                 self.exit_system()
+                if self.dead:
+                    return
             binary_line: list = list()
             instr_format: int = instruction_format[line[0]]
             bits: int = 16
@@ -493,6 +510,8 @@ class Interpreter(object):
                     self.error("Incorrect number of arguments for instruction {instr}, expected {expected}".format(
                         instr=token.value, expected=arg_number), instruction=token.value.upper())
                     self.exit_system()
+                    if self.dead:
+                        return
                 if arg_number == 0:
                     continue
                 for ind in range(len(arg_types)):
@@ -502,14 +521,20 @@ class Interpreter(object):
                         self.error("Expected a REGISTER, got a {typ}".format(typ=tok.TokenType.value), -1, True,
                                    instruction=token.value.upper())
                         self.exit_system()
+                        if self.dead:
+                            return
                     if arg == "a" and tok.TokenType != TokenType.VARIABLE:
                         self.error("Expected a VARIABLE or ADDRESS, got a {typ}".format(typ=tok.TokenType.value),
                                    -1, True, instruction=token.value.upper())
                         self.exit_system()
+                        if self.dead:
+                            return
                     if arg == "c" and not tok.constant:
                         self.error("Expected a CONSTANT, got a {typ}".format(typ=tok.TokenType.value), -1, True,
                                    instruction=token.value.upper())
                         self.exit_system()
+                        if self.dead:
+                            return
                 continue
 
     def to_bin(self):
@@ -519,7 +544,10 @@ class Interpreter(object):
         return [bin_to_hex("".join(line)) for line in self.to_bin_list()]
 
     def to_hex2(self):
-        return [bin_to_hex("".join(line),4) for line in self.to_bin_list2()]
+        try:
+            return [bin_to_hex("".join(line),4) for line in self.to_bin_list2()]
+        except TypeError:
+            print("...")
 
     def from_hex(self, hex_lines: list):
         return [hex_to_bin(line, 16) for line in hex_lines]
