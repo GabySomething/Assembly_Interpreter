@@ -135,7 +135,7 @@ class Interpreter(object):
             return TokenType.CONST_ASSIGN
         if word in instructions:
             return TokenType.INSTRUCTION
-        if re.match("^[0-9]+[0-9a-fA-F]+", word) or re.match("^[0-9]+", word) or re.match("^#[0-9]+", word):
+        if re.match("^[0-9]+[0-9a-fA-F]+", word) or re.match("^[0-9]+", word) or re.match("^#[0-9]+", word) or re.match("^#[0-9a-fA-F]+", word):
             return TokenType.INTEGER
         if word.endswith(":"):
             return TokenType.LABEL
@@ -220,7 +220,7 @@ class Interpreter(object):
                     return None, origin
                 org: int = int(words[1], 16)
                 if origin > org:
-                    self.error("Possible risk of overwriting addresses.", line_number, False, True)
+                    self.error("---Possible risk of overwriting addresses.---", line_number, False, True)
                 origin = org
                 tokens.append(Token(words[0], first_token_type, org))
                 tokens.append(Token(org, TokenType.INTEGER, org))
