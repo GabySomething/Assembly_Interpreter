@@ -93,7 +93,7 @@ def compText(*args):
     interpreter = inter(text_lines)
     interpreter.instruction_check()
     hex_lines = interpreter.to_hex2()
-    # print(*interpreter.token_lines,sep="\n")
+    print(*interpreter.token_lines,sep="\n")
     if hex_lines is None:
         print("Can't compile due to error.")
         return
@@ -185,7 +185,7 @@ def formatText(text: Text):
             label.place(x=200 - label_width, y=y + yoffset, height=height, width=label_width)
             line_numbers.append(label)
         if len(line) > 0 and not line.isspace():
-            if re.match(r'^(const)[\s]+[\w]+[\s]+#?[0-9a-fA-F]+([\s]|((//)+.*)*)*$', line):
+            if re.match(r'^[\s]+(const)[\s]+[\w]+[\s]+#?[0-9a-fA-F]+([\s]|((//)+.*)*)*$', line):
                 correct = True
             elif re.match(r'(^[\s]+|(^[\w]+[\s]+))(db)[\s]+[\w]+(([\s]|,)+[\w]+)*([\s]|((//)+.*)*)*$', line):
                 correct = True

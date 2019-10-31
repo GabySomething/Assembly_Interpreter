@@ -214,6 +214,23 @@ class Interpreter(object):
                 tokens += self.get_tokens_in_list(words[1:], line_number, TokenType.INTEGER, save_errors=save_errors)
                 tokens = self.set_origin_in_list(tokens, origin)
                 origin += 1
+            elif first_token_type == TokenType.CONST_ASSIGN:
+                if len(words) < 3:
+                    self.error("Invalid token, not enough arguments", line_number, save_errors)
+                    return None, origin
+                elif len(words) > 3:
+                    self.error("Invalid token, too many arguments", line_number, save_errors)
+                    return None, origin
+                if self.token_type(words[1]) == TokenType.VARIABLE:
+                    tokens.append(Token(words[0], first_token_type))
+                    tokens.append(Token(words[1], TokenType.VARIABLE))
+                    tokens += self.get_tokens_in_list(words[2:], line_number, TokenType.INTEGER,
+                                                      save_errors=save_errors, is_constant=True)
+                    tokens = self.set_origin_in_list(tokens, origin)
+                else:
+                    self.error("Invalid token, after declaring const, you must declare a variable name", line_number,
+                               save_errors)
+                    return None, origin
             elif first_token_type == TokenType.ORG:
                 if len(words) != 2:
                     self.error("Invalid token, origin not set correctly", line_number, save_errors)
@@ -266,23 +283,7 @@ class Interpreter(object):
                     self.error("Invalid token, you must assign the variable with the instruction db", line_number,
                                save_errors)
                     return None, origin
-            elif first_token_type == TokenType.CONST_ASSIGN:
-                if len(words) < 3:
-                    self.error("Invalid token, not enough arguments", line_number, save_errors)
-                    return None, origin
-                elif len(words) > 3:
-                    self.error("Invalid token, too many arguments", line_number, save_errors)
-                    return None, origin
-                if self.token_type(words[1]) == TokenType.VARIABLE:
-                    tokens.append(Token(words[0], first_token_type))
-                    tokens.append(Token(words[1], TokenType.VARIABLE))
-                    tokens += self.get_tokens_in_list(words[2:], line_number, TokenType.INTEGER,
-                                                      save_errors=save_errors, is_constant=True)
-                    tokens = self.set_origin_in_list(tokens, origin)
-                else:
-                    self.error("Invalid token, after declaring const, you must declare a variable name", line_number,
-                               save_errors)
-                    return None, origin
+
         if len(tokens) <= 0:
             self.error("Bad formatting", line_number, save_errors)
             return None, origin
