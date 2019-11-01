@@ -64,7 +64,25 @@ instruction_format[30] = 3
 # Code =
 #
 # Code = Code.upper()
-memory = [0]*256
+memory = [0] * 256
+Mem = ["0" * 8 for i in range(4096)]
+Registers = ["0"]*8
+
+
+def get_rc(bit):
+    c = int(bit % 8)
+    r = int(bit // 8)
+    return r, c
+
+
+# def write_to_memory_by_bit(addr, elem):
+
+
+def write_to_memory_by_address(addr, elem):
+    global Mem
+    Mem[addr] = elem[:8]
+    if len(elem) > 8:
+        write_to_memory_by_address(addr + 1, elem[8:].zfill(8))
 
 class TokenType(Enum):
     INTEGER = "INTEGER"
@@ -112,7 +130,7 @@ class Interpreter(object):
         self.errors = {}
         self.lines: list = list()
         self.token_lines = list()
-        lines = text.replace(",", " ").split("\n") ##hmmmmmmmmmmmm
+        lines = text.replace(",", " ").split("\n")  ##hmmmmmmmmmmmm
         for line in lines:
             line: str = line
             if "//" in line:
@@ -135,7 +153,8 @@ class Interpreter(object):
             return TokenType.CONST_ASSIGN
         if word in instructions:
             return TokenType.INSTRUCTION
-        if re.match("^[0-9]+[0-9a-fA-F]+", word) or re.match("^[0-9]+", word) or re.match("^#[0-9]+", word) or re.match("^#[0-9a-fA-F]+", word):
+        if re.match("^[0-9]+[0-9a-fA-F]+", word) or re.match("^[0-9]+", word) or re.match("^#[0-9]+", word) or re.match(
+                "^#[0-9a-fA-F]+", word):
             return TokenType.INTEGER
         if word.endswith(":"):
             return TokenType.LABEL
@@ -326,7 +345,7 @@ class Interpreter(object):
         # exit(code)
 
     def to_memory(self):
-        memory_line: list = [[]]*256
+        memory_line: list = [[]] * 256
         if not self.is_clean():
             return None
         for line in self.token_lines:
@@ -360,8 +379,7 @@ class Interpreter(object):
                             var = int(var, 16)
                         memory_line[addr].append(var)
 
-        return [x if len(x)>0 else [0] for x in memory_line]
-
+        return [x if len(x) > 0 else [0] for x in memory_line]
 
     def to_decimal(self):
         decimal_lines: list = list()
@@ -546,13 +564,12 @@ class Interpreter(object):
 
     def to_hex2(self):
         try:
-            return [bin_to_hex("".join(line),4) for line in self.to_bin_list2()]
+            return [bin_to_hex("".join(line), 4) for line in self.to_bin_list2()]
         except TypeError:
             print("...")
 
     def from_hex(self, hex_lines: list):
         return [hex_to_bin(line, 16) for line in hex_lines]
-
 
 # inter: Interpreter = Interpreter(Code)
 # inter.instruction_check()
