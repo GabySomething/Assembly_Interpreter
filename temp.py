@@ -2,6 +2,45 @@ import re
 
 Memory = ["0" * 8 for i in range(4096)]
 Registers = ["0"] * 8
+Buffer = ["0"*8 for i in range(4)]
+
+class Output(object):
+    global Memory
+
+    def __init__(self, address: int, space=1):
+        self.address = address
+        self.__space = space
+        self.memory = []
+        if address < 0:
+            return
+        if space == 1:
+            self.memory = [Memory[address]]
+        elif space > 1:
+            self.memory = Memory[address:address + space]
+
+    @property
+    def space(self):
+        return self.__space
+
+    @space.setter
+    def space(self, value):
+        if value <= 0 or self.address < 0:
+            return
+        if value == 1:
+            self.memory = [Memory[self.address]]
+        else:
+            self.memory = Memory[self.address:self.address + value]
+        self.__space = value
+
+    def __iter__(self):
+        return iter(self.memory)
+
+
+Things = {
+        "Stoplight": Output(-1),
+        "Seven Segment": Output(-1),
+        "Ascii Display": Output(-1, 8)
+        }
 
 
 def sliceAssig(l: list, lower: int, upper: int, value) -> list:
@@ -21,6 +60,14 @@ def is_hex(elem):
 
 def is_dec(elem):
     return re.match(r'^[\d]+$', elem)
+
+
+def dec_to_ascii(dec: int):
+    return chr(dec)
+
+
+def bin_to_ascii(bin: str):
+    return dec_to_ascii(int(bin, 2))
 
 
 def zfill_right(string: str, zeroes: int):
