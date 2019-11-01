@@ -196,6 +196,17 @@ def PUSH(R: int, current_address=1):
     Memory[current_address - 1] = hex_to_bin(Registers[R].zfill(len(Memory[current_address])))
     return format_function(4, 2, R, current_address - 1)
 
+def LOADRIND(R1: int, R2: int):
+    pass
+
+def STORERIND(R1: int, R2: int):
+    pass
+
+def ADD(R1: int, R2: int, R3: int): #R1 and then args possibly?
+    pass
+
+def SUB(R1: int, R2: int, R3: int):
+    pass
 
 def ADDIM(R: int, const: str):
     global Registers
@@ -204,9 +215,71 @@ def ADDIM(R: int, const: str):
     Registers[R] = hexadecimal(current + decimal)
     # falta return aqui
 
+def SUBIM(R: int, const: str):
+    pass
+
+def AND(R1: int, R2: int, R3: int):
+    pass
+
+def OR(R1: int, R2: int, R3: int):
+    pass
+
+def XOR(R1: int, R2: int, R3: int):
+    pass
+
+def NOT(R1: int, R2: int):
+    pass
+
+def NEG(R1: int, R2: int):
+    pass
+
+def SHIFTR(R1: int, R2: int, R3: int):
+    pass
+
+def SHIFTL(R1: int, R2: int, R3: int):
+    pass
+
+def ROTAR(R1: int, R2: int, R3: int):
+    pass
+
+def ROTAL(R1: int, R2: int, R3: int):
+    pass
+
+def JMPRIND(R: int):
+    pass
 
 def JMPADDR(*args):
     return format_function(21, 3, *args)
+
+def JCONDRIN(R: int):
+    pass
+
+def JCONDADDR(address: int):
+    pass
+
+def LOOP(R: int, address: int):
+    pass
+
+def GRT(R1: int, R2: int):
+    pass
+
+def GRTEQ(R1: int, R2: int):
+    pass
+
+def EQ(R1: int, R2: int):
+    pass
+
+def NEQ(R1: int, R2: int):
+    pass
+
+def NOP(*args):
+    return format_function(29,1,*args)
+
+def CALL(current_address: int):
+    pass
+
+def RETURN():
+    pass
 
 
 write_to_memory_from_address(0, LOAD(5, 25))
