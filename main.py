@@ -489,7 +489,10 @@ class Interpreter(object):
                     string += " ".join([str(v) for v in values])
                     table.append(f"INSTR : {string}")
                     # print([type(v) for v in values])
-                    output = instruction_functions[opcode](*values)
+                    if opcode != 2:
+                        output = instruction_functions[opcode](*values)
+                    else:
+                        output = instruction_functions[opcode](values[0],line[0].org)
                     if output is None:
                         output = "X" * 16
                     print(f"Binary: {output}")
