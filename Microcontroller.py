@@ -231,224 +231,268 @@ def DB(address: int, *args):
         write_to_memory_from_address(address + i, binary(e, 8))
 
 
-def LOAD(R: int, address: int):
+def LOAD(R: int, address: int, affect_mem=True):
     global Registers, Memory
-    Registers[R] = bin_to_hex(Memory[address])
+    if affect_mem:
+        Registers[R] = bin_to_hex(Memory[address])
     return format_function(0, 2, R, address)
 
 
-def LOADIM(R: int, const: str):
+def LOADIM(R: int, const: str, affect_mem=True):
     global Registers  # const must be a hex
-    Registers[R] = const
+    if affect_mem:
+        Registers[R] = const
     return format_function(1, 2, R, hex_to_dec(str(const)))
 
 
-def POP(R: int, current_address=0):
+def POP(R: int, current_address=0, affect_mem=True):
     global Registers, Memory
-    Registers[R] = bin_to_hex(Memory[current_address + 1])
+    if affect_mem:
+        Registers[R] = bin_to_hex(Memory[current_address + 1])
     return format_function(2, 2, R, current_address + 1)
 
 
-def STORE(R: int, address: int):
+def STORE(R: int, address: int, affect_mem=True):
     global Memory, Registers
-    store = hex_to_bin(Registers[R], 8)
-    print(f'Storing {store} from R{R} into Memory address:{address}')
-    Memory[address] = store
+    if affect_mem:
+        store = hex_to_bin(Registers[R], 8)
+        # print(f'Storing {store} from R{R} into Memory address:{address}')
+        Memory[address] = store
     return format_function(3, 2, R, address)
 
 
-def PUSH(R: int, current_address=1):
+def PUSH(R: int, current_address=1, affect_mem=True):
     global Registers, Memory
-    Memory[current_address - 1] = hex_to_bin(Registers[R].zfill(len(Memory[current_address])))
+    if affect_mem:
+        Memory[current_address - 1] = hex_to_bin(Registers[R].zfill(len(Memory[current_address])))
     return format_function(4, 2, R, current_address - 1)
 
 
-def LOADRIND(R1: int, R2: int):
+def LOADRIND(R1: int, R2: int, affect_mem=True):
     global Registers, Memory
-    Registers[R1] = bin_to_hex(Memory[int(Registers[R2], 16)])
+    if affect_mem:
+        Registers[R1] = bin_to_hex(Memory[int(Registers[R2], 16)])
     return format_function(5, 1, R1, R2)
 
 
-def STORERIND(R1: int, R2: int):
+def STORERIND(R1: int, R2: int, affect_mem=True):
     global Registers, Memory
-    Registers[R2] = bin_to_hex(Memory[int(Registers[R1], 16)])
+    if affect_mem:
+        Registers[R2] = bin_to_hex(Memory[int(Registers[R1], 16)])
     return format_function(6, 1, R1, R2)
 
 
-def ADD(Ra: int, R1: int, R2: int):
+def ADD(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]))
+    if affect_mem:
+        Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]))
     return format_function(7, 1, Ra, R1, R2)
 
 
-def SUB(Ra: int, R1: int, R2: int):
+def SUB(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) - hex_to_dec(Registers[R2]))
+    if affect_mem:
+        Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) - hex_to_dec(Registers[R2]))
     return format_function(8, 1, Ra, R1, R2)
 
 
-def ADDIM(R: int, const: str):
+def ADDIM(R: int, const: str, affect_mem=True):
     global Registers
-    current = hex_to_dec(Registers[R])
-    decimal = hex_to_dec(const)
-    Registers[R] = hexadecimal(current + decimal)
+    if affect_mem:
+        current = hex_to_dec(Registers[R])
+        decimal = hex_to_dec(const)
+        Registers[R] = hexadecimal(current + decimal)
     return format_function(9, 2, R, const)
 
 
-def SUBIM(R: int, const: str):
+def SUBIM(R: int, const: str, affect_mem=True):
     global Registers
-    current = hex_to_dec(Registers[R])
-    decimal = hex_to_dec(const)
-    Registers[R] = hexadecimal(current - decimal)
+    if affect_mem:
+        current = hex_to_dec(Registers[R])
+        decimal = hex_to_dec(const)
+        Registers[R] = hexadecimal(current - decimal)
     return format_function(10, 2, R, const)
 
 
-def AND(Ra: int, R1: int, R2: int):
+def AND(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    Registers[Ra] = str(int(hex_to_dec(Registers[R1]) * hex_to_dec(Registers[R2]) != 0)).zfill(4)
+    if affect_mem:
+        Registers[Ra] = str(int(hex_to_dec(Registers[R1]) * hex_to_dec(Registers[R2]) != 0)).zfill(4)
     return format_function(11, 1, Ra, R1, R2)
 
 
-def OR(Ra: int, R1: int, R2: int):
+def OR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    Registers[Ra] = str(int(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]) != 0)).zfill(4)
+    if affect_mem:
+        Registers[Ra] = str(int(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]) != 0)).zfill(4)
     return format_function(12, 1, Ra, R1, R2)
 
 
-def XOR(Ra: int, R1: int, R2: int):
+def XOR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    Registers[Ra] = str(int(hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R2]))).zfill(4)
+    if affect_mem:
+        Registers[Ra] = str(int(hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R2]))).zfill(4)
     return format_function(13, 1, Ra, R1, R2)
 
 
-def NOT(Ra: int, R1: int):
+def NOT(Ra: int, R1: int, affect_mem=True):
     global Registers
-    Registers[Ra] = bin_to_hex(not_bin(hex_to_bin(Registers[R1], 8)))
+    if affect_mem:
+        Registers[Ra] = bin_to_hex(not_bin(hex_to_bin(Registers[R1], 8)))
     return format_function(14, 1, Ra, R1)
 
 
-def NEG(Ra: int, R1: int):
+def NEG(Ra: int, R1: int, affect_mem=True):
     global Registers
-    Registers[Ra] = hexadecimal(-hex_to_dec(Registers[R1]))
+    if affect_mem:
+        Registers[Ra] = hexadecimal(-hex_to_dec(Registers[R1]))
     return format_function(15, 1, Ra, R1)
 
 
-def SHIFTR(Ra: int, R1: int, R2: int):
+def SHIFTR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    shifts = hex_to_dec(Registers[R2])
-    b = hex_to_bin(Registers[1])
-    if shifts >= len(b):
-        Registers[Ra] = "0" * 8
-        return format_function(16, 1, Ra, R1, R2)
-    shifts %= len(b)
-    b = "0" * shifts + b[:-shifts]
-    h = bin_to_hex(b, 4)
-    Registers[Ra] = h
+    if affect_mem:
+        shifts = hex_to_dec(Registers[R2])
+        b = hex_to_bin(Registers[1])
+        if shifts >= len(b):
+            Registers[Ra] = "0" * 8
+            return format_function(16, 1, Ra, R1, R2)
+        shifts %= len(b)
+        b = "0" * shifts + b[:-shifts]
+        h = bin_to_hex(b, 4)
+        Registers[Ra] = h
     return format_function(16, 1, Ra, R1, R2)
 
 
-def SHIFTL(Ra: int, R1: int, R2: int):
+def SHIFTL(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    shifts = hex_to_dec(Registers[R2])
-    b = hex_to_bin(Registers[1])
-    if shifts >= len(b):
-        Registers[Ra] = "0" * 8
-        return format_function(17, 1, Ra, R1, R2)
-    shifts %= len(b)
-    b = b[:shifts] + "0" * shifts
-    h = bin_to_hex(b, 4)
-    Registers[Ra] = h
+    if affect_mem:
+        shifts = hex_to_dec(Registers[R2])
+        b = hex_to_bin(Registers[1])
+        if shifts >= len(b):
+            Registers[Ra] = "0" * 8
+            return format_function(17, 1, Ra, R1, R2)
+        shifts %= len(b)
+        b = b[:shifts] + "0" * shifts
+        h = bin_to_hex(b, 4)
+        Registers[Ra] = h
     return format_function(17, 1, Ra, R1, R2)
 
 
-def ROTAR(Ra: int, R1: int, R2: int):
+def ROTAR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    shifts = hex_to_dec(Registers[R2])
-    b = hex_to_bin(Registers[1])
-    shifts %= len(b)
-    b = b[-shifts:] + b[:-shifts]
-    h = bin_to_hex(b, 4)
-    Registers[Ra] = h
+    if affect_mem:
+        shifts = hex_to_dec(Registers[R2])
+        b = hex_to_bin(Registers[1])
+        shifts %= len(b)
+        b = b[-shifts:] + b[:-shifts]
+        h = bin_to_hex(b, 4)
+        Registers[Ra] = h
     return format_function(18, 1, Ra, R1, R2)
 
 
-def ROTAL(Ra: int, R1: int, R2: int):
+def ROTAL(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
-    b = hex_to_bin(Registers[R1])
-    shifts = hex_to_dec(Registers[R2])
-    result = ""
-    for i in range(len(b)):
-        m = (i + shifts) % len(b)
-        result += b[m]
-    h = bin_to_hex(result, 4)
-    Registers[Ra] = h
+    if affect_mem:
+        b = hex_to_bin(Registers[R1])
+        shifts = hex_to_dec(Registers[R2])
+        result = ""
+        for i in range(len(b)):
+            m = (i + shifts) % len(b)
+            result += b[m]
+        h = bin_to_hex(result, 4)
+        Registers[Ra] = h
     return format_function(19, 1, Ra, R1, R2)
 
 
-def JMPRIND(R: int):
-    pass
+def JMPRIND(R: int, affect_mem=True):
+    if affect_mem:
+        pass
+    return format_function(20,1,R)
 
 
-def JMPADDR(*args):
+def JMPADDR(*args, affect_mem=True):
+    if affect_mem:
+        pass
     return format_function(21, 3, *args)
 
 
-def JCONDRIN(R: int):
-    pass
+def JCONDRIN(R: int, affect_mem=True):
+    if affect_mem:
+        pass
+    return format_function(22,1,R)
+
+def JCONDADDR(address: int, affect_mem=True):
+    if affect_mem:
+        pass
+    return format_function(23,3,address)
 
 
-def JCONDADDR(address: int):
-    pass
-
-
-def LOOP(Ra: int, address: int):
+def LOOP(Ra: int, address: int, affect_mem=True):
     global Registers, Memory
-    n = hex_to_dec(Registers[Ra])
-    if address % 2 != 0:
-        address += 1
-    instruction = Memory[address] + Memory[address + 1]
-    # print(f'The loop is gonna loop {n} times')
-    for i in range(n):
-        # print(f"looping instruction {instruction}")
-        binary_to_instructions(instruction, address)
-    Registers[Ra] = '0'
+    if affect_mem:
+        n = hex_to_dec(Registers[Ra])
+        if address % 2 != 0:
+            address += 1
+        instruction = Memory[address] + Memory[address + 1]
+        # print(f'The loop is gonna loop {n} times')
+        for i in range(n):
+            # print(f"looping instruction {instruction}")
+            binary_to_instructions(instruction, address)
+        Registers[Ra] = '0'
     return format_function(24, 2, Ra, address)
 
 
-def GRT(R1: int, R2: int):
+def GRT(R1: int, R2: int, affect_mem=True):
     global Registers
-    # result = hex_to_dec(Registers[R1]) > hex_to_dec(Registers[R1])
-    return format_function(25,1,R1,R2)
+    if affect_mem:
+        # result = hex_to_dec(Registers[R1]) > hex_to_dec(Registers[R1])
+        pass
+    return format_function(25, 1, R1, R2)
 
 
-def GRTEQ(R1: int, R2: int):
+def GRTEQ(R1: int, R2: int, affect_mem=True):
     global Registers
-    # result = hex_to_dec(Registers[R1]) >= hex_to_dec(Registers[R1])
-    return format_function(26,1,R1,R2)
+    if affect_mem:
+        # result = hex_to_dec(Registers[R1]) >= hex_to_dec(Registers[R1])
+        pass
+    return format_function(26, 1, R1, R2)
 
 
-def EQ(R1: int, R2: int):
+def EQ(R1: int, R2: int, affect_mem=True):
     global Registers
-    # result = hex_to_dec(Registers[R1]) == hex_to_dec(Registers[R1])
-    return format_function(27,1,R1,R2)
+    if affect_mem:
+        # result = hex_to_dec(Registers[R1]) == hex_to_dec(Registers[R1])
+        pass
+    return format_function(27, 1, R1, R2)
 
 
-def NEQ(R1: int, R2: int):
+def NEQ(R1: int, R2: int, affect_mem=True):
     global Registers
-    # result = hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R1])
-    return format_function(28,1,R1,R2)
+    if affect_mem:
+        # result = hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R1])
+        pass
+    return format_function(28, 1, R1, R2)
 
 
-def NOP(*args):
+def NOP(*args, affect_mem=True):
+    if affect_mem:
+        pass
     return format_function(29, 1, *args)
 
 
-def CALL(current_address = 0):
+def CALL(current_address=0, affect_mem=True):
     global Memory
-    pass
+    if affect_mem:
+        pass
+    return format_function(30, 3, current_address)
 
-def RETURN():
-    pass
+
+def RETURN(affect_mem=True):
+    if affect_mem:
+        pass
+    return format_function(31, 3)
+
 
 def show_memory(num=-1):
     global Memory
