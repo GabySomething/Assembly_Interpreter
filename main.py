@@ -16,9 +16,10 @@ argument_types: list = ["r,a", "r,c", "r", "r,a", "r", "r,r", "r,r", "r,r,r", "r
                         "r,r,r", "r,r", "r,r", "r,r,r", "r,r,r", "r,r,r", "r,r,r", "r", "a", "r", "a", "r,a", "r,r",
                         "r,r", "r,r", "r,r", "0", "a", "0"]
 
-memory = [0] * 256
-Mem = ["0" * 8 for i in range(4096)]
-Registers = ["0"] * 8
+
+# memory = [0] * 256
+# Mem = ["0" * 8 for i in range(4096)]
+# Registers = ["0"] * 8
 
 
 class TokenType(Enum):
@@ -454,17 +455,19 @@ class Interpreter(object):
                 result.append(token.value)
             if token.TokenType == TokenType.VARIABLE:
                 var = self.get_variable(token.value)
+                if type(var) == list:
+                    var = var[0]
                 if var is None:
                     self.error("Variable " + token.value + " is not defined")
                     self.exit_system()
                     if self.dead:
                         return
-                if type(var) == list:
-                    var = var[0]
+                print(var)
                 result.append(var)
         return result
 
     def to_memory_2(self):
+        table = []
         if not self.is_clean():
             clear_memory()
             return None
@@ -476,21 +479,44 @@ class Interpreter(object):
                     opcode = instructions.index(line[0].value)
                     remaining = line[1:]
                     values = self.get_value(*remaining)
-                    print(f"ADDRESS: {addr}\t|", line[0].value,*values)
+                    if values is None:
+                        continue
+                    if any([v is None for v in values]):
+                        print(f"ERROR: Function {instructions[opcode]} is receiving an undefined value.")
+                        continue
+                    print(f"ADDRESS: {addr}\t|", line[0].value, *values)
+                    string = instructions[opcode] + " "
+                    string += " ".join([str(v) for v in values])
+                    table.append(f"INSTR : {string}")
                     # print([type(v) for v in values])
                     output = instruction_functions[opcode](*values)
                     if output is None:
-                        output = "X"*16
+                        output = "X" * 16
                     print(f"Binary: {output}")
                     write_to_memory_from_address(addr, output)
                 if first_token_type == TokenType.VARIABLE:
                     remaining = line[2:]
                     values = self.get_value(*remaining)
+                    table_vals = values.copy()
                     values = [int(hex_to_dec(v)) for v in values]
-                    print(f"ADDRESS: {addr}\t|", line[0].value,"DB",*values)
+                    print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+                    string = line[0].value + " "
+                    string += " ".join([str(v) for v in table_vals])
+                    table.append(f'VAR : {string}')
                     DB(addr, *values)
+                if first_token_type == TokenType.LIST_ASSIGN:
+                    remaining = line[1:]
+                    values = self.get_value(*remaining)
+                    values = [int(hex_to_dec(v)) for v in values]
+                    print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+                    DB(addr, *values)
+                if first_token_type == TokenType.CONST_ASSIGN:
+                    table.append(f"CONST : {line[1].value} {line[2].value}")
                 print("-------")
-        return Memory
+        for i in range(len(Registers)):
+            r = Registers[i]
+            table.append(f'R{i} : {r}')
+        return Memory, list(dict.fromkeys(table))
 
     def to_decimal(self):
         decimal_lines: list = list()
@@ -680,10 +706,10 @@ class Interpreter(object):
             print("...")
 
     def to_hex3(self):
-        m = self.to_memory_2()
+        m, _ = self.to_memory_2()
         try:
             bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
-            hm = [bin_to_hex(b, 4) if b!="XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
+            hm = [bin_to_hex(b, 4) if b != "XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
             return hm
         except TypeError:
             print("...")

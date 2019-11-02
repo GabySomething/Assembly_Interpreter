@@ -60,6 +60,11 @@ def show_line_numbers(text: Text, line_num):
     label_width = 40
     yoffset = 20
 
+    # if len(text_lines) == 1:
+    #     for label in line_num:
+    #         if label is not None:
+    #             label.place(x=-100, y=-100, height=18, width=label_width)
+
     for i in range(len(text_lines)):
         dline = text.dlineinfo(tk_pos(i + 1, 0))
         if dline is None:
@@ -96,6 +101,7 @@ def compText(*args):
     text_lines = text.get("1.0", END).upper()
     interpreter = inter(text_lines)
     interpreter.instruction_check()
+    _,mem_table = interpreter.to_memory_2()
     hex_lines = interpreter.to_hex3()
     if hex_lines is None:
         print("Can't compile due to error.")
@@ -105,13 +111,12 @@ def compText(*args):
     for hox in hex_lines:
         text_hex.insert(END, hox + "\n")
 
-    memory = interpreter.to_memory()
-    for i in range(len(memory)):
-        m = memory[i]
-        if m == [0]:
+    for k in mem_table:
+        if k is None:
             continue
-        text_tables.insert('1.0', "{name}\t| {typ}\t| {addr}\n".format(name=instructions[m[0]], typ="INSTR",
-                                                                       addr=hex(i)[2:].upper()))
+        if type(k) == list:
+            continue
+        text_tables.insert(END,str(k)+"\n")
     for tag in text_hex.tag_names():
         text_hex.tag_delete(tag)
 
@@ -187,7 +192,7 @@ def formatText(text: Text):
         correct = False
         if i >= len(line_numbers):
             label = Label(root, bg='black', fg='white', font=(Font, Font_Size), text=str(i + 1))
-            label.place(x=200 - label_width, y=y + yoffset, height=height, width=label_width)
+            label.place(x=150 - label_width, y=y + yoffset, height=height, width=label_width)
             line_numbers.append(label)
         if len(line) > 0 and not line.isspace():
             if re.match(r'^[\s]+(const)[\s]+[\w]+[\s]+#?[0-9a-fA-F]+([\s]|((//)+.*)*)*$', line):
@@ -208,7 +213,7 @@ def formatText(text: Text):
                 line_numbers[i].config(bg=rgb(255, 0, 0), fg='black')
         else:
             line_numbers[i].config(bg='black', fg='white')
-        line_numbers[i].place(x=200 - label_width, y=y + yoffset, height=height, width=label_width)
+        line_numbers[i].place(x=150 - label_width, y=y + yoffset, height=height, width=label_width)
 
 
 def getText(*args):
@@ -277,15 +282,15 @@ root.geometry("1024x650")
 root.resizable(0, 0)
 style = ttk.Style()
 text = Text(root, width=40, height=10, bg=rgb((25, 25, 25)), fg="white", font=(Font, Font_Size), highlightthickness=0)
-text_tables = Text(root, width=40, height=10, bg=rgb((50, 12, 12)), fg="white", font=(Font, Font_Size),
+text_tables = Text(root, width=40, height=10, bg=rgb((50, 12, 12)), fg="white", font=(Font, Font_Size-2),
                    highlightthickness=0)
-text_hex = Text(root, width=40, height=10, bg=rgb((12, 20, 50)), fg="white", font=(Font, Font_Size),
+text_hex = Text(root, width=40, height=10, bg=rgb((12, 20, 50)), fg="white", font=(Font, Font_Size-2),
                 highlightthickness=0)
 scrollbar = Scrollbar(root, orient="vertical")
 scrollbar_hex = Scrollbar(root, orient="vertical")
 text.scrollbar = scrollbar
-scrollbar.place(x=724, y=20, width=15, height=630)
-scrollbar_hex.place(x=140, y=20, width=15, height=610)
+scrollbar.place(x=724, y=20, width=15, height=610)
+scrollbar_hex.place(x=90, y=20, width=15, height=610)
 scrollbar.config(command=f(text.yview, req=formatText, reqArg=text))
 scrollbar_hex.config(command=f(text_hex.yview, req=show_line_numbers, reqArg=[text_hex, line_numbers_hex]))
 text.bind("<KeyPress>", (lambda event: formatText(text)))
@@ -294,9 +299,9 @@ text.bind("<MouseWheel>", (lambda event: formatText(text)))
 text.config(yscrollcommand=scrollbar.set)
 text_hex.config(yscrollcommand=scrollbar_hex.set)
 text_hex.bind("<MouseWheel>", (lambda event: show_line_numbers(text_hex, line_numbers_hex)))
-text.place(x=200, y=20, height=630, width=524)
-text_tables.place(x=744, y=20, height=630, width=1024 - 744)
-text_hex.place(x=40, y=20, height=610, width=100)
+text.place(x=150, y=20, height=610, width=524) #x=200
+text_tables.place(x=744, y=20, height=610, width=1024 - 744)
+text_hex.place(x=40, y=20, height=610, width=50)
 text_tables.config(state=DISABLED)
 text_hex.config(state=DISABLED)
 butt_save = Button(root, bg=rgb(25, 25, 25), fg="white", text="Save File", command=file_save, highlightthickness=0)
@@ -306,12 +311,12 @@ butt_open_project = Button(root, bg=rgb(25, 25, 25), fg="white", text="Open Proj
                            highlightthickness=0)
 butt_clear = Button(root, bg="red", fg="white", text="Clear", command=delText, highlightthickness=0)
 butt_show_mem = Button(root, bg=rgb(25, 25, 25), fg="white", text="Show Unused Memory", command=toggle_mem,
-                       highlightthickness=0)
+                       highlightthickness=0, font=(Font, Font_Size-3))
 butt_compile = Button(root, bg=rgb(0, 125, 0), fg="white", text="Compile", command=compText, highlightthickness=0)
-butt_save.place(x=40, y=0, width=80, height=20)
-butt_save_project.place(x=200, y=0, width=80, height=20)
-butt_open_project.place(x=280, y=0, width=80, height=20)
-butt_show_mem.place(x=0, y=630, width=160, height=20)
-butt_clear.place(x=420, y=0, width=80, height=20)
-butt_compile.place(x=360, y=0, width=60, height=20)
+butt_save.place(x=40, y=0, width=65, height=20)
+butt_save_project.place(x=150, y=0, width=80, height=20)
+butt_open_project.place(x=230, y=0, width=80, height=20)
+butt_show_mem.place(x=0, y=630, width=150, height=20)
+butt_clear.place(x=370, y=0, width=80, height=20)
+butt_compile.place(x=310, y=0, width=60, height=20)
 root.mainloop()
