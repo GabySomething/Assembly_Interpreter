@@ -416,32 +416,39 @@ def LOOP(Ra: int, address: int):
 
 
 def GRT(R1: int, R2: int):
-    pass
+    global Registers
+    # result = hex_to_dec(Registers[R1]) > hex_to_dec(Registers[R1])
+    return format_function(25,1,R1,R2)
 
 
 def GRTEQ(R1: int, R2: int):
-    pass
+    global Registers
+    # result = hex_to_dec(Registers[R1]) >= hex_to_dec(Registers[R1])
+    return format_function(26,1,R1,R2)
 
 
 def EQ(R1: int, R2: int):
-    pass
+    global Registers
+    # result = hex_to_dec(Registers[R1]) == hex_to_dec(Registers[R1])
+    return format_function(27,1,R1,R2)
 
 
 def NEQ(R1: int, R2: int):
-    pass
+    global Registers
+    # result = hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R1])
+    return format_function(28,1,R1,R2)
 
 
 def NOP(*args):
     return format_function(29, 1, *args)
 
 
-def CALL(current_address: int):
+def CALL(current_address = 0):
+    global Memory
     pass
-
 
 def RETURN():
     pass
-
 
 def show_memory(num=-1):
     global Memory
