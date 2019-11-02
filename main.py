@@ -1,38 +1,6 @@
 import re
 from enum import Enum
-
-
-def sliceAssig(l: list, lower: int, upper: int, value) -> list:
-    l[lower:upper] = [value] * (upper - lower)
-    return l
-
-
-def binary(decimal: int, bits: int = 0) -> str:
-    s: str = bin(decimal)[2:]
-    if len(s) < bits:
-        return s.zfill(bits)
-    return s
-
-
-def hexadecimal(decimal: int, bits: int = 0) -> str:
-    s: str = hex(decimal)[2:].upper()
-    if len(s) < bits:
-        return s.zfill(bits)
-    return s
-
-
-def bin_to_hex(binary: str, bits: int = 0) -> str:
-    s: str = hex(int(binary, 2))[2:].upper()
-    if len(s) < bits:
-        return s.zfill(bits)
-    return s
-
-
-def hex_to_bin(hexadecimal: str, bits: int = 0) -> str:
-    s: str = bin(int(hexadecimal, 16))[2:].upper()
-    if len(s) < bits:
-        return s.zfill(bits)
-    return s
+from Microcontroller import *
 
 
 def isA(element, *what):
@@ -48,41 +16,10 @@ argument_types: list = ["r,a", "r,c", "r", "r,a", "r", "r,r", "r,r", "r,r,r", "r
                         "r,r,r", "r,r", "r,r", "r,r,r", "r,r,r", "r,r,r", "r,r,r", "r", "a", "r", "a", "r,a", "r,r",
                         "r,r", "r,r", "r,r", "0", "a", "0"]
 
-instruction_format: list = [1] * len(instructions)
-instruction_format = sliceAssig(instruction_format, 0, 11, 2)
-instruction_format[21] = 3
-instruction_format[22] = 3
-instruction_format[23] = 3
-instruction_format[24] = 2
-instruction_format[30] = 3
-# Code = ""
-# try:
-#     Code = open(input("Please specify file name: "), "r").read()
-# except FileNotFoundError:
-#     print("File does not exist!")
-#     exit(1)
-# Code =
-#
-# Code = Code.upper()
 memory = [0] * 256
 Mem = ["0" * 8 for i in range(4096)]
-Registers = ["0"]*8
+Registers = ["0"] * 8
 
-
-def get_rc(bit):
-    c = int(bit % 8)
-    r = int(bit // 8)
-    return r, c
-
-
-# def write_to_memory_by_bit(addr, elem):
-
-
-def write_to_memory_by_address(addr, elem):
-    global Mem
-    Mem[addr] = elem[:8]
-    if len(elem) > 8:
-        write_to_memory_by_address(addr + 1, elem[8:].zfill(8))
 
 class TokenType(Enum):
     INTEGER = "INTEGER"
@@ -197,10 +134,14 @@ class Interpreter(object):
         else:
             print(error)
 
-    def set_origin_in_list(self, l: list, org: int):
+    def set_origin_in_list(self, l: list, org: int, increasing_origin=False):
         for token in l:
             if type(token) == Token:
                 token.org = org
+                if token.TokenType == TokenType.LIST_ASSIGN or token.TokenType == TokenType.VARIABLE:
+                    continue
+                if increasing_origin:
+                    org += 1
         return l
 
     def set_line_number_in_list(self, l: list, line_number: int):
@@ -308,7 +249,132 @@ class Interpreter(object):
             return None, origin
         return tokens, origin
 
+    def get_tokens_from_line_3(self, line: str, line_number: int = -1, origin: int = 0, save_errors: bool = True):
+        tokens: list = list()
+        if line[0] == " " or line[0] == "\t":
+            words = [w.strip() for w in line.split()]
+            first_token_type = self.token_type(words[0])
+            if first_token_type == TokenType.INSTRUCTION:
+                if origin % 2 != 0:
+                    origin += 1
+                index: int = instructions.index(words[0])
+                tokens.append(Token(words[0], first_token_type, instruction_format[index]))
+                tokens += self.get_tokens_in_list(words[1:], line_number, TokenType.REGISTER, TokenType.INTEGER,
+                                                  TokenType.VARIABLE, save_errors=save_errors)
+                tokens = self.set_origin_in_list(tokens, origin)
+                origin += 2
+            elif first_token_type == TokenType.LIST_ASSIGN:
+                # tokens.append(Token(words[0], first_token_type, -2))
+                # tokens += self.get_tokens_in_list(words[1:], line_number, TokenType.INTEGER, save_errors=save_errors)
+                # tokens = self.set_origin_in_list(tokens, origin)
+                # origin += 1
+
+                tokens.append(Token(words[0], first_token_type))
+                # tokens.append(Token(words[1], TokenType.LIST_ASSIGN))
+                integers = self.get_tokens_in_list(words[1:], line_number, TokenType.INTEGER,
+                                                   save_errors=save_errors)
+                bits_used: int = len(integers)
+                tokens += integers
+                tokens = self.set_origin_in_list(tokens, origin, True)
+                origin += bits_used
+
+            elif first_token_type == TokenType.CONST_ASSIGN:
+                if len(words) < 3:
+                    self.error("Invalid token, not enough arguments", line_number, save_errors)
+                    return None, origin
+                elif len(words) > 3:
+                    self.error("Invalid token, too many arguments", line_number, save_errors)
+                    return None, origin
+                if self.token_type(words[1]) == TokenType.VARIABLE:
+                    tokens.append(Token(words[0], first_token_type))
+                    tokens.append(Token(words[1], TokenType.VARIABLE))
+                    tokens += self.get_tokens_in_list(words[2:], line_number, TokenType.INTEGER,
+                                                      save_errors=save_errors, is_constant=True)
+                    tokens = self.set_origin_in_list(tokens, origin)
+                else:
+                    self.error("Invalid token, after declaring const, you must declare a variable name", line_number,
+                               save_errors)
+                    return None, origin
+            elif first_token_type == TokenType.ORG:
+                if len(words) != 2:
+                    self.error("Invalid token, origin not set correctly", line_number, save_errors)
+                    return None, origin
+                org: int = int(words[1], 16)
+                if origin > org:
+                    self.error("---Possible risk of overwriting addresses.---", line_number, False, True)
+                origin = org
+                tokens.append(Token(words[0], first_token_type, org))
+                tokens.append(Token(org, TokenType.INTEGER, org))
+            else:
+                self.error("Invalid token, the second column is only for instructions", line_number, save_errors)
+                return None, origin
+        else:
+            words = [w.strip() for w in line.split()]
+            first_token_type = self.token_type(words[0])
+            if first_token_type == TokenType.LABEL:
+                tokens.append(Token(words[0].replace(":", ""), TokenType.LABEL, origin))
+                if len(words) >= 3:
+                    token_type = self.token_type(words[1])
+                    if token_type != TokenType.INSTRUCTION:
+                        self.error("Invalid token, can't have a {type} after a label".format(type=token_type),
+                                   line_number, save_errors)
+                    else:
+                        if origin % 2 != 0:
+                            origin += 1
+                        tokens.append(
+                            Token(words[1], TokenType.INSTRUCTION, origin,
+                                  instruction_format[instructions.index(words[1])]))
+                    tokens += self.get_tokens_in_list(words[2:], line_number, TokenType.REGISTER, TokenType.INTEGER,
+                                                      TokenType.VARIABLE, save_errors=save_errors)
+                    tokens = self.set_origin_in_list(tokens, origin)
+                    origin += 2
+                elif 1 < len(words) < 3:
+                    self.error("Not enough arguments", line_number, save_errors)
+            elif first_token_type == TokenType.VARIABLE:
+                if len(words) < 3:
+                    self.error("Invalid token, too few arguments", line_number, save_errors)
+                    return None, origin
+                if words[1].lower() == "db":
+                    tokens.append(Token(words[0], first_token_type))
+                    tokens.append(Token(words[1], TokenType.LIST_ASSIGN))
+                    integers = self.get_tokens_in_list(words[2:], line_number, TokenType.INTEGER,
+                                                       save_errors=save_errors)
+                    bits_used: int = len(integers)
+                    tokens += integers
+                    tokens = self.set_origin_in_list(tokens, origin, True)
+                    origin += bits_used
+                else:
+                    self.error("Invalid token, you must assign the variable with the instruction db", line_number,
+                               save_errors)
+                    return None, origin
+
+        if len(tokens) <= 0:
+            self.error("Bad formatting", line_number, save_errors)
+            return None, origin
+        return tokens, origin
+
     def make_tokens_2(self, save_errors: bool = True):
+        token_lines: list = list()
+        org: int = 0
+        for i in range(len(self.lines)):
+            line: str = self.lines[i]
+            tokens, org = self.get_tokens_from_line_3(line, i, org, save_errors)
+            if tokens is None:
+                continue
+            if any(t.TokenType == TokenType.LIST_ASSIGN for t in tokens):
+                if tokens[0].TokenType == TokenType.VARIABLE:
+                    self.variables[tokens[0].value] = [
+                        t.org if not t.constant or not t.TokenType == TokenType.REGISTER else t.value for t in
+                        tokens[2:]]
+            elif tokens[0].TokenType == TokenType.CONST_ASSIGN:
+                self.variables[tokens[1].value] = tokens[2].value
+            elif tokens[0].TokenType == TokenType.LABEL:
+                self.variables[tokens[0].value] = tokens[0].org
+            token_lines.append(tokens)
+        self.token_lines = token_lines
+        return token_lines
+
+    def make_tokens_3(self, save_errors: bool = True):
         token_lines: list = list()
         org: int = 0
         for i in range(len(self.lines)):
@@ -318,9 +384,7 @@ class Interpreter(object):
                 continue
             if any(t.TokenType == TokenType.LIST_ASSIGN for t in tokens):
                 if tokens[0].TokenType == TokenType.VARIABLE:
-                    self.variables[tokens[0].value] = [
-                        t.org if not t.constant or not t.TokenType == TokenType.REGISTER else t.value for t in
-                        tokens[2:]]
+                    self.variables[tokens[0].value] = [t.value for t in tokens[2:]]
             elif tokens[0].TokenType == TokenType.CONST_ASSIGN:
                 self.variables[tokens[1].value] = tokens[2].value
             elif tokens[0].TokenType == TokenType.LABEL:
@@ -380,6 +444,53 @@ class Interpreter(object):
                         memory_line[addr].append(var)
 
         return [x if len(x) > 0 else [0] for x in memory_line]
+
+    def get_value(self, *tokens: Token):
+        result = []
+        for token in tokens:
+            if token.TokenType == TokenType.REGISTER:
+                result.append(int(token.value))
+            if token.TokenType == TokenType.INTEGER:
+                result.append(token.value)
+            if token.TokenType == TokenType.VARIABLE:
+                var = self.get_variable(token.value)
+                if var is None:
+                    self.error("Variable " + token.value + " is not defined")
+                    self.exit_system()
+                    if self.dead:
+                        return
+                if type(var) == list:
+                    var = var[0]
+                result.append(var)
+        return result
+
+    def to_memory_2(self):
+        if not self.is_clean():
+            clear_memory()
+            return None
+        for line in self.token_lines:
+            if line is not None:
+                first_token_type = line[0].TokenType
+                addr = line[0].org
+                if first_token_type == TokenType.INSTRUCTION:
+                    opcode = instructions.index(line[0].value)
+                    remaining = line[1:]
+                    values = self.get_value(*remaining)
+                    print(f"ADDRESS: {addr}\t|", line[0].value,*values)
+                    # print([type(v) for v in values])
+                    output = instruction_functions[opcode](*values)
+                    if output is None:
+                        output = "X"*16
+                    print(f"Binary: {output}")
+                    write_to_memory_from_address(addr, output)
+                if first_token_type == TokenType.VARIABLE:
+                    remaining = line[2:]
+                    values = self.get_value(*remaining)
+                    values = [int(hex_to_dec(v)) for v in values]
+                    print(f"ADDRESS: {addr}\t|", line[0].value,"DB",*values)
+                    DB(addr, *values)
+                print("-------")
+        return Memory
 
     def to_decimal(self):
         decimal_lines: list = list()
@@ -565,6 +676,15 @@ class Interpreter(object):
     def to_hex2(self):
         try:
             return [bin_to_hex("".join(line), 4) for line in self.to_bin_list2()]
+        except TypeError:
+            print("...")
+
+    def to_hex3(self):
+        m = self.to_memory_2()
+        try:
+            bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
+            hm = [bin_to_hex(b, 4) if b!="XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
+            return hm
         except TypeError:
             print("...")
 

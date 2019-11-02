@@ -8,13 +8,10 @@ from main import sliceAssig, instructions
 Font = "Courier New"  # Courier New
 Font_Size = 12
 Show_Full_Memory = False
-# instructions: list = ['LOAD', 'LOADIM', 'POP', 'STORE', 'PUSH', 'LOADRIND', 'STORERIND', 'ADD', 'SUB', 'ADDIM', 'SUBIM',
-#                       'AND', 'OR', 'XOR', 'NOT', 'NEG', 'SHIFTR', 'SHIFTL', 'ROTAR', 'ROTAL', 'JMPRIND', 'JMPADDR',
-#                       'JCONDRIN', 'JCONDADDR', 'LOOP', 'GRT', 'GRTEQ', 'EQ', 'NEQ', 'NOP', 'CALL', 'RETURN']
 
 regex_instr = "|".join(instructions[::-1])
 line_numbers = []
-line_numbers_hex = []
+line_numbers_hex = [None] * 2048
 
 
 #
@@ -52,32 +49,39 @@ def highlight_text(txt, tag_name, lineno, start_char, end_char, bg_color=None, f
 
 def delText(*args):
     text.delete('1.0', END)
+    text_hex.config(state=NORMAL)
+    text_hex.delete('1.0', END)
+    show_line_numbers(text_hex, line_numbers_hex)
+    text_hex.config(state=DISABLED)
 
 
 def show_line_numbers(text: Text, line_num):
     text_lines = text.get("1.0", END).split("\n")
     label_width = 40
     yoffset = 20
-    if len(line_num) > len(text_lines):
-        for i in range(len(line_num) - 1, len(text_lines), -1):
-            line_num[i].destroy()
-            del line_num[i]
 
     for i in range(len(text_lines)):
         dline = text.dlineinfo(tk_pos(i + 1, 0))
         if dline is None:
             if len(line_num) > i:
+                if line_num[i] is None:
+                    continue
                 line_num[i].place(x=-100, y=-100, height=18, width=label_width)
             continue
         x, y, width, height, baseline = dline
         if len(text_lines[i]) == 0:
             continue
-        if i >= len(line_num):
+
+        if line_num[i] is None:
             label = Label(root, bg='black', fg='white', font=(Font, Font_Size), text=str(i + 1))
             label.place(x=0, y=y + yoffset, height=height, width=label_width)
-            line_num.append(label)
-        if text_lines[i] != "0000" and line_num == line_numbers_hex:
-            line_num[i].config(bg=rgb(0, 0, 50), fg=rgb(0, 255, 255))
+            line_num[i] = label
+
+        if line_num == line_numbers_hex:
+            if text_lines[i] != "0000":
+                line_num[i].config(bg=rgb(0, 0, 50), fg=rgb(0, 255, 255), text=str(i * 2))
+            else:
+                line_num[i].config(bg=rgb(10, 10, 10), fg=rgb(125, 125, 125), text=str(i * 2))
         elif line_num == line_numbers_hex:
             line_num[i].config(bg=rgb(25, 25, 25), fg='white')
         line_num[i].place(x=0, y=y + yoffset, height=height, width=label_width)
@@ -92,14 +96,14 @@ def compText(*args):
     text_lines = text.get("1.0", END).upper()
     interpreter = inter(text_lines)
     interpreter.instruction_check()
-    hex_lines = interpreter.to_hex2()
-    print(*interpreter.token_lines,sep="\n")
+    hex_lines = interpreter.to_hex3()
     if hex_lines is None:
         print("Can't compile due to error.")
         return
+    if not Show_Full_Memory:
+        hex_lines = hex_lines[:50]
     for hox in hex_lines:
-        if hox != '0000' or Show_Full_Memory:
-            text_hex.insert('1.0', hox + "\n")
+        text_hex.insert(END, hox + "\n")
 
     memory = interpreter.to_memory()
     for i in range(len(memory)):
@@ -110,6 +114,7 @@ def compText(*args):
                                                                        addr=hex(i)[2:].upper()))
     for tag in text_hex.tag_names():
         text_hex.tag_delete(tag)
+
     text_hex.tag_configure("center", justify='center')
     text_hex.tag_add("center", 1.0, "end")
     text_tables.config(state=DISABLED)
@@ -220,7 +225,7 @@ def file_save_project(*args):
 
 
 def file_open_project(*args):
-    f = filedialog.askopenfilename(filetypes=(("ASM  Files","*.asm"),))
+    f = filedialog.askopenfilename(filetypes=(("ASM  Files", "*.asm"),))
     code = None
     try:
         code = open(f).read()
@@ -288,6 +293,7 @@ text.bind("<KeyRelease>", (lambda event: formatText(text)))
 text.bind("<MouseWheel>", (lambda event: formatText(text)))
 text.config(yscrollcommand=scrollbar.set)
 text_hex.config(yscrollcommand=scrollbar_hex.set)
+text_hex.bind("<MouseWheel>", (lambda event: show_line_numbers(text_hex, line_numbers_hex)))
 text.place(x=200, y=20, height=630, width=524)
 text_tables.place(x=744, y=20, height=630, width=1024 - 744)
 text_hex.place(x=40, y=20, height=610, width=100)

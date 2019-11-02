@@ -2,7 +2,14 @@ import re
 
 Memory = ["0" * 8 for i in range(4096)]
 Registers = ["0"] * 8
-Buffer = ["0"*8 for i in range(4)]
+Buffer = ["0" * 8 for i in range(4)]
+Current_Address = 0
+
+
+def clear_memory():
+    Memory = ["0" * 8 for i in range(4096)]
+    Registers = ["0"] * 8
+
 
 class Output(object):
     global Memory
@@ -37,10 +44,10 @@ class Output(object):
 
 
 Things = {
-        "Stoplight": Output(-1),
-        "Seven Segment": Output(-1),
-        "Ascii Display": Output(-1, 8)
-        }
+    "Stoplight": Output(-1),
+    "Seven Segment": Output(-1),
+    "Ascii Display": Output(-1, 8)
+}
 
 
 def sliceAssig(l: list, lower: int, upper: int, value) -> list:
@@ -167,6 +174,7 @@ def get_addr(bit):
 
 def write_to_memory_from_address(addr, elem):
     global Memory
+    print(f'Wrote {elem[:8]} to {addr}')
     Memory[addr] = elem[:8]
     if len(elem) > 8:
         remainder = elem[8:]
@@ -219,6 +227,7 @@ def DB(address: int, *args):
     global Memory
     for i in range(len(args)):
         e = args[i]
+        print(f'Writing {e} to {address + i}...')
         write_to_memory_from_address(address + i, binary(e, 8))
 
 
@@ -242,7 +251,9 @@ def POP(R: int, current_address=0):
 
 def STORE(R: int, address: int):
     global Memory, Registers
-    Memory[address] = hex_to_bin(Registers[R].zfill(len(Memory[address])))
+    store = hex_to_bin(Registers[R], 8)
+    print(f'Storing {store} from R{R} into Memory address:{address}')
+    Memory[address] = store
     return format_function(3, 2, R, address)
 
 
@@ -453,10 +464,10 @@ def show_registers():
         print(f'R{i} = {Registers[i]}')
 
 
-instructions = [LOAD, LOADIM, POP, STORE, PUSH, LOADRIND, STORERIND, ADD, SUB, ADDIM, SUBIM,
-                AND, OR, XOR, NOT, NEG, SHIFTR, SHIFTL, ROTAR, ROTAL, JMPRIND, JMPADDR,
-                JCONDRIN, JCONDADDR, LOOP, GRT, GRTEQ, EQ, NEQ, NOP, CALL, RETURN]
-instruction_format: list = [1] * len(instructions)
+instruction_functions = [LOAD, LOADIM, POP, STORE, PUSH, LOADRIND, STORERIND, ADD, SUB, ADDIM, SUBIM,
+                         AND, OR, XOR, NOT, NEG, SHIFTR, SHIFTL, ROTAR, ROTAL, JMPRIND, JMPADDR,
+                         JCONDRIN, JCONDADDR, LOOP, GRT, GRTEQ, EQ, NEQ, NOP, CALL, RETURN]
+instruction_format: list = [1] * len(instruction_functions)
 instruction_format = sliceAssig(instruction_format, 0, 11, 2)
 instruction_format[21] = 3
 instruction_format[22] = 3
@@ -466,9 +477,9 @@ instruction_format[30] = 3
 
 
 def binary_to_instructions(b: str, address: int):
-    global instructions
+    global instruction_functions
     opcode = int(b[:5], 2)
-    instruction = instructions[opcode]
+    instruction = instruction_functions[opcode]
     f = instruction_format[opcode]
     args = []
     if f == 1:
@@ -484,9 +495,7 @@ def binary_to_instructions(b: str, address: int):
         ra = int(b[5:], 2)
         args = [ra]
     args = [a for a in args if a != 0]
-    # print(str(instruction), *args)
     instruction(*args)
-
 
 # write_to_memory_from_address(0, LOAD(5, 25))
 # write_to_memory_from_address(3, LOADIM(6, "2"))
@@ -494,17 +503,17 @@ def binary_to_instructions(b: str, address: int):
 # show_memory(10)
 # show_registers()
 
-wm = write_to_memory_from_address
-DB(25, 17, 7, 8, 9, 5, 2, 2, 20)
-write_to_memory_from_address(0, LOAD(5, 25))
-write_to_memory_from_address(2, LOAD(3, 26))
-write_to_memory_from_address(4, ADD(1, 5, 3))
-wm(6, ADDIM(6, '1'))
-wm(8, ADDIM(6, '8'))
-wm(10, NOT(4, 6))
-wm(12, NEG(7, 6))  ###WTF
-wm(14, LOOP(3, 6))
-
-show_memory(30)
-show_hex_memory(30)
-show_registers()
+# wm = write_to_memory_from_address
+# DB(25, 17, 7, 8, 9, 5, 2, 2, 20)
+# write_to_memory_from_address(0, LOAD(5, 25))
+# write_to_memory_from_address(2, LOAD(3, 26))
+# write_to_memory_from_address(4, ADD(1, 5, 3))
+# wm(6, ADDIM(6, '1'))
+# wm(8, ADDIM(6, '8'))
+# wm(10, NOT(4, 6))
+# wm(12, NEG(7, 6))  ###WTF
+# wm(14, LOOP(3, 6))
+#
+# show_memory(30)
+# show_hex_memory(30)
+# show_registers()
