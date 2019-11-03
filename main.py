@@ -879,7 +879,7 @@ class Interpreter(object):
 
     @property
     def memory(self):
-        return Memory
+        return get_memory()
 
     def clear_memory(self):
         clear_memory()
