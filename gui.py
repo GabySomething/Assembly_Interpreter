@@ -150,6 +150,66 @@ class StopLightUI(Stoplight):
         self.render()
 
 
+class SevenSegmentUI(Seven_Segment):
+    def __init__(self, address, x, y):
+        super().__init__(address)
+        self.x = x
+        self.y = y
+
+    def render(self):
+        width = 150
+        height = 135
+        canvas = Canvas(root, width=width, height=height, highlightthickness=0, bg=rgb(25, 25, 25))
+        x = self.x
+        y = self.y
+
+        canvas.place(x=x, y=y)
+
+    def clear_ui(self, canvas=None, *buttons):
+        if canvas is not None:
+            canvas.delete('all')
+        for b in buttons:
+            if b is not None:
+                b.destroy()
+
+    def set_memory(self, value: str, canvas=None, *buttons):
+        if re.match(r'^[01]+$', value):
+            value = value.zfill(8)[:8]
+        else:
+            value = "0" * 8
+        self.memory = [value]
+        self.set_values()
+        self.clear_ui(canvas, *buttons)
+        # if 0 <= self.address < 4096:
+        #     get_memory()[self.address] = self.memory
+        #     print(f"changed memory[{self.address}] to {self.memory}")
+        self.render()
+
+    def set_address(self, addr, canvas=None, *buttons):
+        # prev_addr = self.address
+        # if addr != prev_addr:
+        #     if 0 <= prev_addr < 4096:
+        #         get_memory()[prev_addr] = '0' * 8
+        #         print(f"changed memory[{prev_addr}] to {'0'*8}")
+        if re.match(r'^[\d]+$', addr):
+            addr = int(addr)
+        else:
+            self.address = -1
+            self.set_memory('0', canvas, *buttons)
+            return
+        if addr >= 4096:
+            addr = 4095
+        memory = self.memory
+        self.address = addr
+        if len(memory) > 0:
+            if self.memory == '0' * 8:
+                self.memory = memory
+        # get_memory()[self.address] = self.memory
+        self.clear_ui(canvas, *buttons)
+        self.set_values()
+        self.render()
+
+
 def highlight_text(txt, tag_name, lineno, start_char, end_char, bg_color=None, fg_color=None, bold=False):
     txt.tag_add(tag_name, f'{lineno}.{start_char}', f'{lineno}.{end_char}')
     if not bold:
@@ -211,7 +271,7 @@ def show_line_numbers(text: Text, line_num):
         line_num[i].place(x=0, y=y + yoffset, height=height, width=label_width)
 
 
-def compText(*args, step=False, refresh = False):
+def compText(*args, step=False, refresh=False):
     global line_numbers_hex, global_interpreter, stepping, step_table
     text_hex.config(state=NORMAL)
     text_tables.config(state=NORMAL)
@@ -477,5 +537,7 @@ butt_compile.place(x=310, y=0, width=60, height=20)
 butt_step.place(x=370, y=0, width=80, height=20)
 butt_clear.place(x=450, y=0, width=80, height=20)
 sl = StopLightUI(-1, 595, 20)
+ss = SevenSegmentUI(0, 570, 210)
 sl.render()
+ss.render()
 root.mainloop()
