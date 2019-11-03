@@ -37,7 +37,7 @@ class Output(object):
     global Memory
 
     def __init__(self, address: int, space=1):
-        self.address = address
+        self.__address = address
         self.__space = space
         self.memory = []
         if address < 0:
@@ -47,9 +47,16 @@ class Output(object):
         elif space > 1:
             self.memory = Memory[address:address + space]
 
+    def set_values(self):
+        pass
+
     @property
     def space(self):
         return self.__space
+
+    @property
+    def address(self):
+        return self.__address
 
     @space.setter
     def space(self, value):
@@ -60,9 +67,68 @@ class Output(object):
         else:
             self.memory = Memory[self.address:self.address + value]
         self.__space = value
+        if len(self.memory) >= 1:
+            self.set_values()
+
+    @address.setter
+    def address(self, value):
+        self.__address = value
+        self.space = self.__space
+        if len(self.memory) >= 1:
+            self.set_values()
 
     def __iter__(self):
         return iter(self.memory)
+
+
+class Stoplight(Output):
+
+    def __init__(self, address: int):
+        super().__init__(address, 1)
+        self.green = False, False
+        self.yellow = False, False
+        self.red = False, False
+        self.intermittent = False
+
+        if len(self.memory) >= 1:
+            self.set_values()
+
+    def set_values(self):
+        b = self.memory[0]
+        s1 = b[:3]
+        s2 = b[3:6]
+        control = b[6:8]
+
+        self.green = s1[0] == "0", s2[0] == "0"
+        self.yellow = s1[1] == "0", s2[1] == "0"
+        self.red = s1[2] == "0", s2[2] == "0"
+        if control == "00":
+            self.intermittent = False
+
+        if control == "11":
+            self.intermittent = True
+
+    # @property
+    # def space(self):
+    #     return super().space
+    #
+    # @space.setter
+    # def space(self, value):
+    #     super().space = value
+    #     self.set_values()
+
+
+class Seven_Segment(Output):
+    def __init__(self, address: int):
+        super().__init__(address, 1)
+        self.lights = []
+        self.control = True
+        self.set_values()
+
+    def set_values(self):
+        b = self.memory[0]
+        self.lights = [i == '1' for i in b[:7]]
+        self.control = b[-1] == '0'
 
 
 Things = {
