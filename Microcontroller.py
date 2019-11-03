@@ -22,6 +22,24 @@ def get_memory():
     return Memory
 
 
+def get_registers():
+    global Registers
+    return Registers
+
+
+def get_register_table():
+    global Registers
+    result = ""
+    for i in range(8):
+        result += f'R{i} |\t {Registers[i]}\n'
+    return result
+
+
+def set_registers(R, value):
+    global Registers
+    Registers[R] = value
+
+
 def set_memory(new_memory):
     global Memory
     Memory = new_memory
@@ -31,6 +49,7 @@ def clear_memory():
     global Memory, Registers
     Memory = ["0" * 8 for i in range(4096)]
     Registers = ["0"] * 8
+
 
 class Output(object):
     global Memory
@@ -98,9 +117,9 @@ class Stoplight(Output):
         s2 = b[3:6]
         control = b[6:8]
 
-        self.green = s1[0] == "0", s2[0] == "0"
-        self.yellow = s1[1] == "0", s2[1] == "0"
-        self.red = s1[2] == "0", s2[2] == "0"
+        self.green = s1[0] == "1", s2[0] == "1"
+        self.yellow = s1[1] == "1", s2[1] == "1"
+        self.red = s1[2] == "1", s2[2] == "1"
         if control == "00":
             self.intermittent = False
 
@@ -128,6 +147,7 @@ class Seven_Segment(Output):
         b = self.memory[0]
         self.lights = [i == '1' for i in b[:7]]
         self.control = b[-1] == '0'
+
 
 Things = {
     "Stoplight": Output(-1),

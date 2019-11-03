@@ -5,6 +5,8 @@ import re
 from main import Interpreter as inter
 from main import sliceAssig, instructions, bin_to_hex
 from time import sleep
+from Microcontroller import Stoplight, Seven_Segment, get_memory
+
 global_interpreter = None
 stepping = False
 step_table = []
@@ -33,6 +35,22 @@ colors = (rgb(255, 200, 50), rgb(50, 255, 50), rgb(0, 170, 255), rgb(255, 125, 2
           rgb(0, 125, 125), rgb(10, 10, 10))
 
 
+def color_mult(t, t2):
+    if type(t) == int:
+        t = t, t, t
+    if type(t2) == int:
+        t2 = t2, t2, t2
+    r, g, b = t
+    r2, g2, b2 = t2
+    r, g, b = r / 255, g / 255, b / 255
+    r2, g2, b2 = r2 / 255, g2 / 255, b2 / 255
+    return r * r2 * 255, g * g2 * 255, b * b2 * 255
+
+
+def tuple_mult(t, scalar):
+    return [e * scalar for e in t]
+
+
 def tk_pos(line: int, index: int):
     return f'{line}.{index}'
 
@@ -40,6 +58,96 @@ def tk_pos(line: int, index: int):
 def get_pos(pos: str):
     line, index = pos.split(".")
     return int(line), int(index)
+
+
+class StopLightUI(Stoplight):
+    def __init__(self, address, x, y):
+        super().__init__(address)
+        self.x = x
+        self.y = y
+
+    def render(self):
+        width = 100
+        lrad = 30
+        height = 135
+        green = (0, self.green[0] * 255, 0), (0, self.green[1] * 255, 0)
+        yellow = (self.yellow[0] * 255, self.yellow[0] * 255, 0), (self.yellow[1] * 255, self.yellow[1] * 255, 0)
+        red = (self.red[0] * 255, 0, 0), (self.red[1] * 255, 0, 0)
+        canvas = Canvas(root, width=width, height=height, highlightthickness=0, bg=rgb(25, 25, 25))
+        x = self.x
+        y = self.y
+        canvas.create_oval(10, 10, lrad + 10, lrad + 10, outline=rgb(0, 125, 0), fill=rgb(*green[0]), width=2)
+        canvas.create_oval(10, 20 + lrad, lrad + 10, lrad * 2 + 20, outline=rgb(125, 125, 0), fill=rgb(*yellow[0]),
+                           width=2)
+        canvas.create_oval(10, lrad * 2 + 32, lrad + 10, lrad * 3 + 32, outline=rgb(125, 0, 0), fill=rgb(*red[0]),
+                           width=2)
+
+        canvas.create_oval(60, 10, lrad + 60, lrad + 10, outline=rgb(0, 125, 0), fill=rgb(*green[1]), width=2)
+        canvas.create_oval(60, 20 + lrad, lrad + 60, lrad * 2 + 20, outline=rgb(125, 125, 0), fill=rgb(*yellow[1]),
+                           width=2)
+        canvas.create_oval(60, lrad * 2 + 32, lrad + 60, lrad * 3 + 32, outline=rgb(125, 0, 0), fill=rgb(*red[1]),
+                           width=2)
+
+        canvas.place(x=x, y=y)
+        binary_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        binary_setter.place(x=x, y=y + height, width=width - 30, height=20)
+        if len(self.memory) > 0:
+            binary_setter.insert("1.0", self.memory[0])
+        address_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        address_setter.place(x=x, y=y + height + 20, width=40, height=20)
+        address_setter.insert('1.0', self.address)
+        butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
+                       highlightthickness=0)
+        butt2.place(x=x + 40, y=y + height + 20, width=60, height=20)
+        butt = Button(root, text="Set", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
+                      highlightthickness=0)
+        butt.place(x=x + width - 30, y=y + height, width=30, height=20)
+        butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2)))
+        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2)))
+
+    def clear_ui(self, canvas=None, *buttons):
+        if canvas is not None:
+            canvas.delete('all')
+        for b in buttons:
+            if b is not None:
+                b.destroy()
+
+    def set_memory(self, value: str, canvas=None, *buttons):
+        if re.match(r'^[01]+$', value):
+            value = value.zfill(8)[:8]
+        else:
+            value = "0" * 8
+        self.memory = [value]
+        self.set_values()
+        self.clear_ui(canvas, *buttons)
+        # if 0 <= self.address < 4096:
+        #     get_memory()[self.address] = self.memory
+        #     print(f"changed memory[{self.address}] to {self.memory}")
+        self.render()
+
+    def set_address(self, addr, canvas=None, *buttons):
+        # prev_addr = self.address
+        # if addr != prev_addr:
+        #     if 0 <= prev_addr < 4096:
+        #         get_memory()[prev_addr] = '0' * 8
+        #         print(f"changed memory[{prev_addr}] to {'0'*8}")
+        if re.match(r'^[\d]+$', addr):
+            addr = int(addr)
+        else:
+            self.address = -1
+            self.set_memory('0', canvas, *buttons)
+            return
+        if addr >= 4096:
+            addr = 4095
+        memory = self.memory
+        self.address = addr
+        if len(memory) > 0:
+            if self.memory == '0' * 8:
+                self.memory = memory
+        # get_memory()[self.address] = self.memory
+        self.clear_ui(canvas, *buttons)
+        self.set_values()
+        self.render()
 
 
 def highlight_text(txt, tag_name, lineno, start_char, end_char, bg_color=None, fg_color=None, bold=False):
@@ -56,6 +164,14 @@ def delText(*args):
     text_hex.delete('1.0', END)
     show_line_numbers(text_hex, line_numbers_hex)
     text_hex.config(state=DISABLED)
+
+
+def cleanText(*args):
+    string: str = text.get('1.0', END)
+    new_text = "\t".join(re.split(r'[ \t]+', string))
+    text.delete('1.0', END)
+    text.insert('1.0', new_text)
+    formatText(text)
 
 
 def show_line_numbers(text: Text, line_num):
@@ -95,7 +211,7 @@ def show_line_numbers(text: Text, line_num):
         line_num[i].place(x=0, y=y + yoffset, height=height, width=label_width)
 
 
-def compText(*args, step=False):
+def compText(*args, step=False, refresh = False):
     global line_numbers_hex, global_interpreter, stepping, step_table
     text_hex.config(state=NORMAL)
     text_tables.config(state=NORMAL)
@@ -107,7 +223,6 @@ def compText(*args, step=False):
 
     interpreter = global_interpreter
     interpreter.instruction_check()
-
 
     sleep(0.05)
     c_addr = 0
@@ -130,7 +245,7 @@ def compText(*args, step=False):
             stepping = False
             return
         c_addr, table = unpack
-        step_table+=table
+        step_table += table
         mem_table = step_table
         m = interpreter.memory
         hex_lines = interpreter.to_hex3(m)
@@ -145,7 +260,9 @@ def compText(*args, step=False):
     for hox in hex_lines:
         text_hex.insert(END, hox + "\n")
 
-    for k in mem_table:
+    if stepping:
+        text_tables.insert(END, f'PC |\t{interpreter.get_program_counter()}\n')
+    for k in mem_table + interpreter.get_register_table().split("\n"):
         if k is None:
             continue
         if type(k) == list:
@@ -291,9 +408,9 @@ def toggle_mem(*args):
     Show_Full_Memory = not Show_Full_Memory
     print(Show_Full_Memory)
     if not Show_Full_Memory:
-        butt_show_mem.config(text="Show Unused Memory")
+        butt_show_mem.config(text="Show Full Memory")
     else:
-        butt_show_mem.config(text="Hide Unused Memory")
+        butt_show_mem.config(text="Hide Full Memory")
 
 
 def f(*funcs, req=None, reqArg=None):
@@ -316,14 +433,14 @@ root.geometry("1024x650")
 root.resizable(0, 0)
 style = ttk.Style()
 text = Text(root, width=40, height=10, bg=rgb((25, 25, 25)), fg="white", font=(Font, Font_Size), highlightthickness=0)
-text_tables = Text(root, width=40, height=10, bg=rgb((50, 12, 12)), fg="white", font=(Font, Font_Size - 2),
+text_tables = Text(root, width=40, height=10, bg=rgb((50, 12, 12)), fg="white", font=(Font, Font_Size - 3),
                    highlightthickness=0)
 text_hex = Text(root, width=40, height=10, bg=rgb((12, 20, 50)), fg="white", font=(Font, Font_Size - 2),
                 highlightthickness=0)
 scrollbar = Scrollbar(root, orient="vertical")
 scrollbar_hex = Scrollbar(root, orient="vertical")
 text.scrollbar = scrollbar
-scrollbar.place(x=724, y=20, width=15, height=610)
+scrollbar.place(x=530, y=20, width=15, height=610)
 scrollbar_hex.place(x=90, y=20, width=15, height=610)
 scrollbar.config(command=f(text.yview, req=formatText, reqArg=text))
 scrollbar_hex.config(command=f(text_hex.yview, req=show_line_numbers, reqArg=[text_hex, line_numbers_hex]))
@@ -333,7 +450,7 @@ text.bind("<MouseWheel>", (lambda event: formatText(text)))
 text.config(yscrollcommand=scrollbar.set)
 text_hex.config(yscrollcommand=scrollbar_hex.set)
 text_hex.bind("<MouseWheel>", (lambda event: show_line_numbers(text_hex, line_numbers_hex)))
-text.place(x=150, y=20, height=610, width=524)  # x=200
+text.place(x=150, y=20, height=610, width=380)  # x=200 #w = 524
 text_tables.place(x=744, y=20, height=610, width=1024 - 744)
 text_hex.place(x=40, y=20, height=610, width=50)
 text_tables.config(state=DISABLED)
@@ -344,17 +461,21 @@ butt_save_project = Button(root, bg=rgb(25, 25, 25), fg="white", text="Save Proj
 butt_open_project = Button(root, bg=rgb(25, 25, 25), fg="white", text="Open Project", command=file_open_project,
                            highlightthickness=0)
 butt_clear = Button(root, bg="red", fg="white", text="Clear", command=delText, highlightthickness=0)
-butt_show_mem = Button(root, bg=rgb(25, 25, 25), fg="white", text="Show Unused Memory", command=toggle_mem,
+butt_format = Button(root, bg="blue", fg="white", text="Format Text", command=cleanText, highlightthickness=0)
+
+butt_show_mem = Button(root, bg=rgb(25, 25, 25), fg="white", text="Show Full Memory", command=toggle_mem,
                        highlightthickness=0, font=(Font, Font_Size - 3))
 butt_compile = Button(root, bg=rgb(0, 125, 0), fg="white", text="Compile", command=compText, highlightthickness=0)
-butt_step= Button(root, bg=rgb(100, 125, 0), fg="white", text="Step", command=(lambda: compText(step=True)), highlightthickness=0)
+butt_step = Button(root, bg=rgb(100, 125, 0), fg="white", text="Step", command=(lambda: compText(step=True)),
+                   highlightthickness=0)
 butt_save.place(x=40, y=0, width=65, height=20)
+butt_show_mem.place(x=0, y=630, width=150, height=20)
+butt_format.place(x=150, y=630, width=150, height=20)
 butt_save_project.place(x=150, y=0, width=80, height=20)
 butt_open_project.place(x=230, y=0, width=80, height=20)
-butt_show_mem.place(x=0, y=630, width=150, height=20)
-
 butt_compile.place(x=310, y=0, width=60, height=20)
 butt_step.place(x=370, y=0, width=80, height=20)
 butt_clear.place(x=450, y=0, width=80, height=20)
-
+sl = StopLightUI(-1, 595, 20)
+sl.render()
 root.mainloop()

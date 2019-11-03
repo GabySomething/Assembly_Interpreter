@@ -127,7 +127,7 @@ class Interpreter(object):
     def error(self, error: str, line_index: int = -1, save_errors: bool = True, is_warning: bool = False,
               no_line: bool = False, instruction: str = ""):
         if not no_line and line_index > 0:
-            error += "\nLINE: " + str(line_index + 1)
+            error += "\nNEAR LINE: " + str(line_index + 1)
         if instruction.strip() is not "":
             error += "\nINSTRUCTION: " + instruction
         if save_errors and not is_warning:
@@ -521,22 +521,22 @@ class Interpreter(object):
                 if first_token_type == TokenType.CONST_ASSIGN:
                     table.append(f"CONST : {line[1].value} {line[2].value}")
                 # print("-------")
-        for i in range(len(Registers)):
-            r = Registers[i]
-            table.append(f'R{i} : {r}')
+        # for i in range(len(Registers)):
+        #     r = get_registers()[i]
+        #     table.append(f'R{i} : {r}')
         return get_memory(), list(dict.fromkeys(table))
 
     def to_step_memory(self):
         table = []
-        functs = []
+        functs = [None] * 4096
         if not self.is_clean():
             clear_memory()
             return None
-        i = 0
+        # i = 0
         for line in self.token_lines:
             if line is not None:
-                if i >= len(functs):
-                    functs.append([])
+                # if i >= len(functs):
+                #     functs.append([])
                 first_token_type = line[0].TokenType
                 addr = line[0].org
                 if first_token_type == TokenType.INSTRUCTION:
@@ -555,10 +555,10 @@ class Interpreter(object):
                     # print([type(v) for v in values])
                     if opcode != 2:
                         # print(f"something in {i}")
-                        functs[i] = "INSTR", addr, instruction_functions[opcode], values, opcode
+                        functs[addr] = "INSTR", addr, instruction_functions[opcode], values, opcode
                     else:
                         # print(f"something in {i}")
-                        functs[i] = "INSTR", addr, instruction_functions[opcode], [values[0], line[0].org], opcode
+                        functs[addr] = "INSTR", addr, instruction_functions[opcode], [values[0], line[0].org], opcode
                 if first_token_type == TokenType.VARIABLE:
                     remaining = line[2:]
                     values = self.get_value(*remaining)
@@ -568,27 +568,32 @@ class Interpreter(object):
                     string = line[0].value + " "
                     string += " ".join([str(v) for v in table_vals])
                     table.append(f'VAR : {string}')
-                    functs[i] = "DB", addr, DB, values, line[0].value
+                    functs[addr] = "DB", addr, DB, values, line[0].value
                     # DB(addr, *values)
                 if first_token_type == TokenType.LIST_ASSIGN:
                     remaining = line[1:]
                     values = self.get_value(*remaining)
                     values = [int(hex_to_dec(v)) for v in values]
                     # print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
-                    functs[i] = "DB", addr, DB, values
+                    functs[addr] = "DB", addr, DB, values
                     # DB(addr, *values, memory=mem_lines)
                 if first_token_type == TokenType.CONST_ASSIGN:
                     table.append(f"CONST : {line[1].value} {line[2].value}")
-                i += 1
+                # i += 1
 
         for i in range(len(Registers)):
-            r = Registers[i]
+            r = get_registers()[i]
             table.append(f'R{i} : {r}')
-        return [f for f in functs if len(f) > 0], list(dict.fromkeys(table))
+            # [f for f in functs if len(f) > 0]
+        return functs, list(dict.fromkeys(table))
 
     def create_program_counter(self):
         self.index = 0
-        mem_lines, _ = self.to_step_memory()
+        unpack = self.to_step_memory()
+        if unpack is None:
+            self.exit_system()
+            return
+        mem_lines, _ = unpack
         # mem_lines = mem_lines.copy()
         # clear_memory()
         self.function_lines = mem_lines
@@ -626,11 +631,25 @@ class Interpreter(object):
             self.create_program_counter()
         i = self.index
         fl = self.function_lines
+        if fl is None:
+            return
         if i >= len(fl):
             print("starting again....")
             self.index = 0
             return None
         self.index += 1
+        if fl[i] is None or fl[i] == []:
+            for index in range(i, len(fl)):
+                if fl[index] is not None and fl[index] != []:
+                    i = index
+                    self.index = i + 1
+                    break
+
+        if fl[i] is None or fl[i] == []:
+            print("starting again....")
+            self.index = 0
+            return None
+
         current: list = fl[i]
         addr = current[1]
         args = current[3]
@@ -647,7 +666,11 @@ class Interpreter(object):
             instruction(addr, *args)
             if len(current) == 5:
                 table = [f"VAR | {current[4]} {args}"]
+
         return addr, table
+
+    def get_register_table(self):
+        return get_register_table()
 
     def run(self):
         addr, _ = self.next()
