@@ -68,6 +68,8 @@ class Interpreter(object):
         self.errors = {}
         self.lines: list = list()
         self.token_lines = list()
+        self.index = 0
+        self.function_lines = None
         lines = text.replace(",", " ").split("\n")  ##hmmmmmmmmmmmm
         for line in lines:
             line: str = line
@@ -462,14 +464,17 @@ class Interpreter(object):
                     self.exit_system()
                     if self.dead:
                         return
-                print(var)
+                # print(var)
                 result.append(var)
         return result
 
     def to_memory_2(self):
         table = []
+        self.function_lines = None
+        self.index = 0
         if not self.is_clean():
             clear_memory()
+            print("Cleared memory")
             return None
         for line in self.token_lines:
             if line is not None:
@@ -482,9 +487,9 @@ class Interpreter(object):
                     if values is None:
                         continue
                     if any([v is None for v in values]):
-                        print(f"ERROR: Function {instructions[opcode]} is receiving an undefined value.")
+                        # print(f"ERROR: Function {instructions[opcode]} is receiving an undefined value.")
                         continue
-                    print(f"ADDRESS: {addr}\t|", line[0].value, *values)
+                    # print(f"ADDRESS: {addr}\t|", line[0].value, *values)
                     string = instructions[opcode] + " "
                     string += " ".join([str(v) for v in values])
                     table.append(f"INSTR : {string}")
@@ -492,17 +497,17 @@ class Interpreter(object):
                     if opcode != 2:
                         output = instruction_functions[opcode](*values)
                     else:
-                        output = instruction_functions[opcode](values[0],line[0].org)
+                        output = instruction_functions[opcode](values[0], line[0].org)
                     if output is None:
                         output = "X" * 16
-                    print(f"Binary: {output}")
+                    # print(f"Binary: {output}")
                     write_to_memory_from_address(addr, output)
                 if first_token_type == TokenType.VARIABLE:
                     remaining = line[2:]
                     values = self.get_value(*remaining)
                     table_vals = values.copy()
                     values = [int(hex_to_dec(v)) for v in values]
-                    print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+                    # print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
                     string = line[0].value + " "
                     string += " ".join([str(v) for v in table_vals])
                     table.append(f'VAR : {string}')
@@ -511,15 +516,191 @@ class Interpreter(object):
                     remaining = line[1:]
                     values = self.get_value(*remaining)
                     values = [int(hex_to_dec(v)) for v in values]
-                    print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+                    # print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
                     DB(addr, *values)
                 if first_token_type == TokenType.CONST_ASSIGN:
                     table.append(f"CONST : {line[1].value} {line[2].value}")
-                print("-------")
+                # print("-------")
         for i in range(len(Registers)):
             r = Registers[i]
             table.append(f'R{i} : {r}')
-        return Memory, list(dict.fromkeys(table))
+        return get_memory(), list(dict.fromkeys(table))
+
+    def to_step_memory(self):
+        table = []
+        functs = []
+        if not self.is_clean():
+            clear_memory()
+            return None
+        i = 0
+        for line in self.token_lines:
+            if line is not None:
+                if i >= len(functs):
+                    functs.append([])
+                first_token_type = line[0].TokenType
+                addr = line[0].org
+                if first_token_type == TokenType.INSTRUCTION:
+                    opcode = instructions.index(line[0].value)
+                    remaining = line[1:]
+                    values = self.get_value(*remaining)
+                    if values is None:
+                        continue
+                    if any([v is None for v in values]):
+                        print(f"ERROR: Function {instructions[opcode]} is receiving an undefined value.")
+                        continue
+                    # print(f"ADDRESS: {addr}\t|", line[0].value, *values)
+                    string = instructions[opcode] + " "
+                    string += " ".join([str(v) for v in values])
+                    table.append(f"INSTR : {string}")
+                    # print([type(v) for v in values])
+                    if opcode != 2:
+                        # print(f"something in {i}")
+                        functs[i] = "INSTR", addr, instruction_functions[opcode], values, opcode
+                    else:
+                        # print(f"something in {i}")
+                        functs[i] = "INSTR", addr, instruction_functions[opcode], [values[0], line[0].org], opcode
+                if first_token_type == TokenType.VARIABLE:
+                    remaining = line[2:]
+                    values = self.get_value(*remaining)
+                    table_vals = values.copy()
+                    values = [int(hex_to_dec(v)) for v in values]
+                    # print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+                    string = line[0].value + " "
+                    string += " ".join([str(v) for v in table_vals])
+                    table.append(f'VAR : {string}')
+                    functs[i] = "DB", addr, DB, values, line[0].value
+                    # DB(addr, *values)
+                if first_token_type == TokenType.LIST_ASSIGN:
+                    remaining = line[1:]
+                    values = self.get_value(*remaining)
+                    values = [int(hex_to_dec(v)) for v in values]
+                    # print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+                    functs[i] = "DB", addr, DB, values
+                    # DB(addr, *values, memory=mem_lines)
+                if first_token_type == TokenType.CONST_ASSIGN:
+                    table.append(f"CONST : {line[1].value} {line[2].value}")
+                i += 1
+
+        for i in range(len(Registers)):
+            r = Registers[i]
+            table.append(f'R{i} : {r}')
+        return [f for f in functs if len(f) > 0], list(dict.fromkeys(table))
+
+    def create_program_counter(self):
+        self.index = 0
+        mem_lines, _ = self.to_step_memory()
+        # mem_lines = mem_lines.copy()
+        # clear_memory()
+        self.function_lines = mem_lines
+
+    # def next(self):
+    #     if self.function_lines is None:
+    #         self.create_program_counter()
+    #     i = self.index
+    #     if i >= len(self.function_lines) - 1:
+    #         self.index = 0
+    #         return None
+    #     current = self.function_lines[i] + self.function_lines[i + 1]
+    #     self.index += 2
+    #     if current == "0" * 16 or current == "X" * 16:
+    #         for index in range(i, len(self.function_lines) - 1):
+    #             i = index
+    #             self.index = index + 2
+    #             if self.function_lines[index] != "0" * 16 or self.function_lines[index] != "X" * 16:
+    #                 current = self.function_lines[index] + self.function_lines[index + 1]
+    #                 break
+    #     if current == "0" * 16 or current == "X" * 16:
+    #         current = None
+    #     return current, i
+
+    def set_program_counter(self, value):
+        set_program_counter(value)
+
+    def get_program_counter(self):
+        return get_program_counter()
+
+    def next(self):
+        if self.index == 0:
+            print("starting stepper....")
+        if self.function_lines is None:
+            self.create_program_counter()
+        i = self.index
+        fl = self.function_lines
+        if i >= len(fl):
+            print("starting again....")
+            self.index = 0
+            return None
+        self.index += 1
+        current: list = fl[i]
+        addr = current[1]
+        args = current[3]
+        instruction = current[2]
+        table = []
+        set_program_counter(addr)
+        print(f"Program Counter: {get_program_counter()}")
+        if current[0] == "INSTR":
+            opcode = current[4]
+            write_to_memory_from_address(addr, instruction(*args))
+            table = [f"INSTR | {instructions[opcode]} {args}"]
+        elif current[0] == "DB":
+            # print(*args)
+            instruction(addr, *args)
+            if len(current) == 5:
+                table = [f"VAR | {current[4]} {args}"]
+        return addr, table
+
+    def run(self):
+        addr, _ = self.next()
+        while addr is not None:
+            addr, _ = self.next()
+
+    # def run_line(self,l):
+    #     table = []
+    #     line = self.token_lines[l]
+    #     if line is not None:
+    #         first_token_type = line[0].TokenType
+    #         addr = line[0].org
+    #         if first_token_type == TokenType.INSTRUCTION:
+    #             opcode = instructions.index(line[0].value)
+    #             remaining = line[1:]
+    #             values = self.get_value(*remaining)
+    #             if values is None:
+    #                 continue
+    #             if any([v is None for v in values]):
+    #                 print(f"ERROR: Function {instructions[opcode]} is receiving an undefined value.")
+    #                 continue
+    #             print(f"ADDRESS: {addr}\t|", line[0].value, *values)
+    #             string = instructions[opcode] + " "
+    #             string += " ".join([str(v) for v in values])
+    #             table.append(f"INSTR : {string}")
+    #             # print([type(v) for v in values])
+    #             if opcode != 2:
+    #                 output = instruction_functions[opcode](*values)
+    #             else:
+    #                 output = instruction_functions[opcode](values[0], line[0].org)
+    #             if output is None:
+    #                 output = "X" * 16
+    #             print(f"Binary: {output}")
+    #             write_to_memory_from_address(addr, output)
+    #         if first_token_type == TokenType.VARIABLE:
+    #             remaining = line[2:]
+    #             values = self.get_value(*remaining)
+    #             table_vals = values.copy()
+    #             values = [int(hex_to_dec(v)) for v in values]
+    #             print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+    #             string = line[0].value + " "
+    #             string += " ".join([str(v) for v in table_vals])
+    #             table.append(f'VAR : {string}')
+    #             DB(addr, *values)
+    #         if first_token_type == TokenType.LIST_ASSIGN:
+    #             remaining = line[1:]
+    #             values = self.get_value(*remaining)
+    #             values = [int(hex_to_dec(v)) for v in values]
+    #             print(f"ADDRESS: {addr}\t|", line[0].value, "DB", *values)
+    #             DB(addr, *values)
+    #         if first_token_type == TokenType.CONST_ASSIGN:
+    #             table.append(f"CONST : {line[1].value} {line[2].value}")
+    #         print("-------")
 
     def to_decimal(self):
         decimal_lines: list = list()
@@ -696,6 +877,13 @@ class Interpreter(object):
                             return
                 continue
 
+    @property
+    def memory(self):
+        return Memory
+
+    def clear_memory(self):
+        clear_memory()
+
     def to_bin(self):
         return ["".join(line) for line in self.to_bin_list()]
 
@@ -708,8 +896,10 @@ class Interpreter(object):
         except TypeError:
             print("...")
 
-    def to_hex3(self):
-        m, _ = self.to_memory_2()
+    def to_hex3(self, m=None):
+        # clear_memory()
+        if m is None:
+            m, _ = self.to_memory_2()
         try:
             bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
             hm = [bin_to_hex(b, 4) if b != "XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]

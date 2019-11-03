@@ -1,12 +1,34 @@
 import re
+import inspect
 
 Memory = ["0" * 8 for i in range(4096)]
 Registers = ["0"] * 8
 Buffer = ["0" * 8 for i in range(4)]
-Current_Address = 0
+Program_Counter = 0
+
+
+def set_program_counter(value):
+    global Program_Counter
+    Program_Counter = value
+
+
+def get_program_counter():
+    global Program_Counter
+    return Program_Counter
+
+
+def get_memory():
+    global Memory
+    return Memory
+
+
+def set_memory(new_memory):
+    global Memory
+    Memory = new_memory
 
 
 def clear_memory():
+    global Memory, Registers
     Memory = ["0" * 8 for i in range(4096)]
     Registers = ["0"] * 8
 
@@ -172,37 +194,52 @@ def get_addr(bit):
     return r, c
 
 
-def write_to_memory_from_address(addr, elem):
+def write_to_memory_from_address(addr, elem, memory=None):
     global Memory
-    print(f'Wrote {elem[:8]} to {addr}')
-    Memory[addr] = elem[:8]
+
+    # print(f'Wrote {elem[:8]} to {addr}')
+    if memory is not None:
+        memory[addr] = elem[:8]
+    else:
+        Memory[addr] = elem[:8]
     if len(elem) > 8:
         remainder = elem[8:]
-        write_to_memory_from_address(addr + 1, zfill_right(remainder, 8))
+        write_to_memory_from_address(addr + 1, zfill_right(remainder, 8), memory)
 
 
-def write_to_memory_from_bit(bit, *elem):
+def write_to_memory_from_bit(bit, *elem, memory=None):
     global Memory
     if len(elem) == 1 and type(elem[0]) == str:
         elem = elem[0]
     if len(elem) == 1 and type(elem) == str:
         r, c = get_addr(bit)
-        Memory[r] = Memory[r][:c] + elem + Memory[r][c + 1:]
+        if memory is not None:
+            memory[r] = memory[r][:c] + elem + memory[r][c + 1:]
+        else:
+            Memory[r] = Memory[r][:c] + elem + Memory[r][c + 1:]
         return
     if type(elem) == str:
         r, c = get_addr(bit)
         address_length = len(Memory[r])
+        if memory is not None:
+            address_length = len(memory[r])
         if c + len(elem) + 1 >= address_length:
             front = elem[:address_length - c]
             remainder = elem[address_length - c:]
-            Memory[r] = Memory[r][:c] + front
-            write_to_memory_from_bit(bit + len(front), remainder)
+            if memory is not None:
+                memory[r] = memory[r][:c] + front
+            else:
+                Memory[r] = Memory[r][:c] + front
+            write_to_memory_from_bit(bit + len(front), remainder, memory=memory)
             return
         else:
-            Memory[r] = Memory[r][:c] + elem + Memory[r][c + len(elem):]
+            if memory is not None:
+                memory[r] = memory[r][:c] + elem + memory[r][c + len(elem):]
+            else:
+                Memory[r] = Memory[r][:c] + elem + Memory[r][c + len(elem):]
             return
     for i in range(len(elem)):
-        write_to_memory_from_bit(bit + i, elem[i])
+        write_to_memory_from_bit(bit + i, elem[i], memory=memory)
 
 
 def memory_to_hex():
@@ -223,12 +260,12 @@ def format_function(opcode, f_number, *args):
         return first + ("".join(arguments)).zfill(11)
 
 
-def DB(address: int, *args):
+def DB(address: int, *args, memory=None):
     global Memory
     for i in range(len(args)):
         e = args[i]
-        print(f'Writing {e} to {address + i}...')
-        write_to_memory_from_address(address + i, binary(e, 8))
+        # print(f'Writing {e} to {address + i}...')
+        write_to_memory_from_address(address + i, binary(e, 8), memory=memory)
 
 
 def LOAD(R: int, address: int, affect_mem=True):
@@ -408,7 +445,7 @@ def ROTAL(Ra: int, R1: int, R2: int, affect_mem=True):
 def JMPRIND(R: int, affect_mem=True):
     if affect_mem:
         pass
-    return format_function(20,1,R)
+    return format_function(20, 1, R)
 
 
 def JMPADDR(*args, affect_mem=True):
@@ -420,12 +457,13 @@ def JMPADDR(*args, affect_mem=True):
 def JCONDRIN(R: int, affect_mem=True):
     if affect_mem:
         pass
-    return format_function(22,1,R)
+    return format_function(22, 1, R)
+
 
 def JCONDADDR(address: int, affect_mem=True):
     if affect_mem:
         pass
-    return format_function(23,3,address)
+    return format_function(23, 3, address)
 
 
 def LOOP(Ra: int, address: int, affect_mem=True):
@@ -527,7 +565,7 @@ instruction_format[24] = 2
 instruction_format[30] = 3
 
 
-def binary_to_instructions(b: str, address: int):
+def binary_to_instructions(b: str, address: int, write=False):
     global instruction_functions
     opcode = int(b[:5], 2)
     instruction = instruction_functions[opcode]
@@ -546,7 +584,15 @@ def binary_to_instructions(b: str, address: int):
         ra = int(b[5:], 2)
         args = [ra]
     args = [a for a in args if a != 0]
-    instruction(*args)
+    len_args = len(inspect.signature(instruction).parameters) - 1
+    if len(args) != len_args:
+        print("not instruction...")
+        return
+    print(f'Running {instruction} with parameters {args}')
+    if write:
+        write_to_memory_from_address(address, instruction(*args))
+    else:
+        instruction(*args)
 
 # write_to_memory_from_address(0, LOAD(5, 25))
 # write_to_memory_from_address(3, LOADIM(6, "2"))

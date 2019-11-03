@@ -3,8 +3,11 @@ from tkinter import ttk
 from tkinter import filedialog
 import re
 from main import Interpreter as inter
-from main import sliceAssig, instructions
-
+from main import sliceAssig, instructions, bin_to_hex
+from time import sleep
+global_interpreter = None
+stepping = False
+step_table = []
 Font = "Courier New"  # Courier New
 Font_Size = 12
 Show_Full_Memory = False
@@ -92,17 +95,46 @@ def show_line_numbers(text: Text, line_num):
         line_num[i].place(x=0, y=y + yoffset, height=height, width=label_width)
 
 
-def compText(*args):
-    global line_numbers_hex
+def compText(*args, step=False):
+    global line_numbers_hex, global_interpreter, stepping, step_table
     text_hex.config(state=NORMAL)
     text_tables.config(state=NORMAL)
     text_hex.delete("1.0", END)
     text_tables.delete("1.0", END)
     text_lines = text.get("1.0", END).upper()
-    interpreter = inter(text_lines)
+    if global_interpreter is None or not step or not stepping:
+        global_interpreter = inter(text_lines)
+
+    interpreter = global_interpreter
     interpreter.instruction_check()
-    _,mem_table = interpreter.to_memory_2()
-    hex_lines = interpreter.to_hex3()
+
+
+    sleep(0.05)
+    c_addr = 0
+    hex_lines = None
+    if not step:
+        step_table = []
+        interpreter.clear_memory()
+        _, mem_table = interpreter.to_memory_2()
+        hex_lines = interpreter.to_hex3()
+    else:
+        if not stepping:
+            global_interpreter = inter(text_lines)
+            interpreter = global_interpreter
+        stepping = True
+        unpack = interpreter.next()
+        if unpack is None:
+            print("Stepping is done")
+            step_table = []
+            return
+        c_addr, table = unpack
+        step_table+=table
+        mem_table = step_table
+        m = interpreter.memory
+        hex_lines = interpreter.to_hex3(m)
+        # bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
+        # hex_lines = [bin_to_hex(b, 4) if b != "XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
+
     if hex_lines is None:
         print("Can't compile due to error.")
         return
@@ -116,7 +148,7 @@ def compText(*args):
             continue
         if type(k) == list:
             continue
-        text_tables.insert(END,str(k)+"\n")
+        text_tables.insert(END, str(k) + "\n")
     for tag in text_hex.tag_names():
         text_hex.tag_delete(tag)
 
@@ -282,9 +314,9 @@ root.geometry("1024x650")
 root.resizable(0, 0)
 style = ttk.Style()
 text = Text(root, width=40, height=10, bg=rgb((25, 25, 25)), fg="white", font=(Font, Font_Size), highlightthickness=0)
-text_tables = Text(root, width=40, height=10, bg=rgb((50, 12, 12)), fg="white", font=(Font, Font_Size-2),
+text_tables = Text(root, width=40, height=10, bg=rgb((50, 12, 12)), fg="white", font=(Font, Font_Size - 2),
                    highlightthickness=0)
-text_hex = Text(root, width=40, height=10, bg=rgb((12, 20, 50)), fg="white", font=(Font, Font_Size-2),
+text_hex = Text(root, width=40, height=10, bg=rgb((12, 20, 50)), fg="white", font=(Font, Font_Size - 2),
                 highlightthickness=0)
 scrollbar = Scrollbar(root, orient="vertical")
 scrollbar_hex = Scrollbar(root, orient="vertical")
@@ -299,7 +331,7 @@ text.bind("<MouseWheel>", (lambda event: formatText(text)))
 text.config(yscrollcommand=scrollbar.set)
 text_hex.config(yscrollcommand=scrollbar_hex.set)
 text_hex.bind("<MouseWheel>", (lambda event: show_line_numbers(text_hex, line_numbers_hex)))
-text.place(x=150, y=20, height=610, width=524) #x=200
+text.place(x=150, y=20, height=610, width=524)  # x=200
 text_tables.place(x=744, y=20, height=610, width=1024 - 744)
 text_hex.place(x=40, y=20, height=610, width=50)
 text_tables.config(state=DISABLED)
@@ -311,12 +343,16 @@ butt_open_project = Button(root, bg=rgb(25, 25, 25), fg="white", text="Open Proj
                            highlightthickness=0)
 butt_clear = Button(root, bg="red", fg="white", text="Clear", command=delText, highlightthickness=0)
 butt_show_mem = Button(root, bg=rgb(25, 25, 25), fg="white", text="Show Unused Memory", command=toggle_mem,
-                       highlightthickness=0, font=(Font, Font_Size-3))
+                       highlightthickness=0, font=(Font, Font_Size - 3))
 butt_compile = Button(root, bg=rgb(0, 125, 0), fg="white", text="Compile", command=compText, highlightthickness=0)
+butt_step= Button(root, bg=rgb(100, 125, 0), fg="white", text="Step", command=(lambda: compText(step=True)), highlightthickness=0)
 butt_save.place(x=40, y=0, width=65, height=20)
 butt_save_project.place(x=150, y=0, width=80, height=20)
 butt_open_project.place(x=230, y=0, width=80, height=20)
 butt_show_mem.place(x=0, y=630, width=150, height=20)
-butt_clear.place(x=370, y=0, width=80, height=20)
+
 butt_compile.place(x=310, y=0, width=60, height=20)
+butt_step.place(x=370, y=0, width=80, height=20)
+butt_clear.place(x=450, y=0, width=80, height=20)
+
 root.mainloop()
