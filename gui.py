@@ -121,11 +121,13 @@ def compText(*args, step=False):
         if not stepping:
             global_interpreter = inter(text_lines)
             interpreter = global_interpreter
+            interpreter.clear_memory()
         stepping = True
         unpack = interpreter.next()
         if unpack is None:
             print("Stepping is done")
             step_table = []
+            stepping = False
             return
         c_addr, table = unpack
         step_table+=table
