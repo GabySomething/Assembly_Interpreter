@@ -32,7 +32,6 @@ def clear_memory():
     Memory = ["0" * 8 for i in range(4096)]
     Registers = ["0"] * 8
 
-
 class Output(object):
     global Memory
 
@@ -129,7 +128,6 @@ class Seven_Segment(Output):
         b = self.memory[0]
         self.lights = [i == '1' for i in b[:7]]
         self.control = b[-1] == '0'
-
 
 Things = {
     "Stoplight": Output(-1),
