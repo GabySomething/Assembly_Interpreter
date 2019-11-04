@@ -5,7 +5,7 @@ import re
 from main import Interpreter as inter
 from main import sliceAssig, instructions, bin_to_hex
 from time import sleep
-from Microcontroller import Stoplight, Seven_Segment, get_memory
+from Microcontroller import Stoplight, Seven_Segment, get_memory, ASCII_Characters
 
 global_interpreter = None
 stepping = False
@@ -76,16 +76,16 @@ class StopLightUI(Stoplight):
         canvas = Canvas(root, width=width, height=height, highlightthickness=0, bg=rgb(25, 25, 25))
         x = self.x
         y = self.y
-        canvas.create_oval(10, 10, lrad + 10, lrad + 10, outline=rgb(0, 125, 0), fill=rgb(*green[0]), width=2)
+        canvas.create_oval(10, 10, lrad + 10, lrad + 10, outline=rgb(125, 0, 0), fill=rgb(*red[0]), width=2)
         canvas.create_oval(10, 20 + lrad, lrad + 10, lrad * 2 + 20, outline=rgb(125, 125, 0), fill=rgb(*yellow[0]),
                            width=2)
-        canvas.create_oval(10, lrad * 2 + 32, lrad + 10, lrad * 3 + 32, outline=rgb(125, 0, 0), fill=rgb(*red[0]),
+        canvas.create_oval(10, lrad * 2 + 32, lrad + 10, lrad * 3 + 32, outline=rgb(0, 125, 0), fill=rgb(*green[0]),
                            width=2)
 
-        canvas.create_oval(60, 10, lrad + 60, lrad + 10, outline=rgb(0, 125, 0), fill=rgb(*green[1]), width=2)
+        canvas.create_oval(60, 10, lrad + 60, lrad + 10, outline=rgb(125, 0, 0), fill=rgb(*red[1]), width=2)
         canvas.create_oval(60, 20 + lrad, lrad + 60, lrad * 2 + 20, outline=rgb(125, 125, 0), fill=rgb(*yellow[1]),
                            width=2)
-        canvas.create_oval(60, lrad * 2 + 32, lrad + 60, lrad * 3 + 32, outline=rgb(125, 0, 0), fill=rgb(*red[1]),
+        canvas.create_oval(60, lrad * 2 + 32, lrad + 60, lrad * 3 + 32, outline=rgb(0, 125, 0), fill=rgb(*green[1]),
                            width=2)
 
         canvas.place(x=x, y=y)
@@ -249,6 +249,49 @@ class SevenSegmentUI(Seven_Segment):
                 self.memory = memory
         # get_memory()[self.address] = self.memory
         self.clear_ui(canvas, *buttons)
+        self.set_values()
+        self.render()
+
+
+class ASCIICharactersUI(ASCII_Characters):
+    def __init__(self, address: int, x, y):
+        super().__init__(address)
+        self.x = x
+        self.y = y
+
+    def render(self):
+        width = Font_Size * 8+4
+        height = Font_Size * 2
+        x = self.x
+        y = self.y
+        l1 = Label(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text="".join(self.ascii_list))
+        l1.place(x=x, y=y, width=width, height=height)
+
+        address_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        address_setter.place(x=x, y=y + height, width=40, height=20)
+        address_setter.insert('1.0', self.address)
+        butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
+                       highlightthickness=0)
+        butt2.place(x=x + 40, y=y + height, width=60, height=20)
+        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), butt2)))
+
+    def clear_ui(self, *buttons):
+        for b in buttons:
+            if b is not None:
+                b.destroy()
+
+    def set_address(self, addr, *buttons):
+        if re.match(r'^[\d]+$', addr):
+            addr = int(addr)
+        else:
+            print("no")
+            self.address = -1
+            self.memory = ['00000000'] * 8
+            return
+        mem = get_memory()
+        self.address = addr
+        self.memory = mem[addr:addr + 8]
+        self.clear_ui(*buttons)
         self.set_values()
         self.render()
 
@@ -580,7 +623,9 @@ butt_compile.place(x=310, y=0, width=60, height=20)
 butt_step.place(x=370, y=0, width=80, height=20)
 butt_clear.place(x=450, y=0, width=80, height=20)
 sl = StopLightUI(-1, 595, 20)
-ss = SevenSegmentUI(0, 570, 210)
+ss = SevenSegmentUI(-1, 570, 210)
 sl.render()
 ss.render()
+asc = ASCIICharactersUI(-1,596,400)
+asc.render()
 root.mainloop()
