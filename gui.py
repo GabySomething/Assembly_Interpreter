@@ -88,7 +88,9 @@ class StopLightUI(Stoplight):
                            width=2)
         canvas.create_oval(60, lrad * 2 + 32, lrad + 60, lrad * 3 + 32, outline=rgb(0, 125, 0), fill=rgb(*green[1]),
                            width=2)
-
+        label = Label(fg='white', bg='black', text='Intermittent')
+        if self.intermittent:
+            label.place(x=x, y=y - 20, width=width, height=20)
         canvas.place(x=x, y=y)
         binary_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
         binary_setter.place(x=x, y=y + height, width=width - 30, height=20)
@@ -103,8 +105,8 @@ class StopLightUI(Stoplight):
         butt = Button(root, text="Set", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
                       highlightthickness=0)
         butt.place(x=x + width - 30, y=y + height, width=30, height=20)
-        butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2)))
-        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2)))
+        butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2,label)))
+        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2,label)))
 
     def clear_ui(self, canvas=None, *buttons):
         if canvas is not None:
@@ -122,13 +124,19 @@ class StopLightUI(Stoplight):
         self.set_values()
         self.clear_ui(canvas, *buttons)
         if 0 <= self.address < 4096:
-            write_to_memory_from_address(self.address,self.memory[0].zfill(8))
+            # compText(refresh=True)
+            write_to_memory_from_address(self.address, self.memory[0].zfill(8))
             compText(refresh=True)
-
+            # get_memory()[self.address] = self.memory
+            # print(f"changed memory[{self.address}] to {self.memory}")
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
-
+        # prev_addr = self.address
+        # if addr != prev_addr:
+        #     if 0 <= prev_addr < 4096:
+        #         get_memory()[prev_addr] = '0' * 8
+        #         print(f"changed memory[{prev_addr}] to {'0'*8}")
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -142,6 +150,7 @@ class StopLightUI(Stoplight):
         if len(memory) > 0:
             if self.memory == '0' * 8:
                 self.memory = memory
+        # get_memory()[self.address] = self.memory
         self.clear_ui(canvas, *buttons)
         self.set_values()
         self.render()
@@ -163,11 +172,13 @@ class SevenSegmentUI(Seven_Segment):
         x = self.x
         y = self.y
 
+        # print(self.lights)
 
         L = [(0, 0, 0) if not i else (0, 255, 0) for i in self.lights]
         a = [rgb(*tuple_mult(l, int(self.control))) for l in L]
         b = [rgb(*tuple_mult(l, int(not self.control))) for l in L]
 
+        # print(L, a, b, sep="\n")
 
         canvas.create_rectangle(10, 10, 10, 57, fill=a[0], outline=a[0], width=0)
         canvas.create_rectangle(10, 10, 10 + 60, 10, fill=a[1], outline=a[1], width=0)
@@ -384,7 +395,7 @@ class HexKeyboard(object):
         self.text.config(state=DISABLED)
 
     def render(self):
-        width = 40*4
+        width = 40 * 4
         height = 160
         self.text.place(x=self.x, y=self.y, width=width, height=20)
         for i in range(20):
