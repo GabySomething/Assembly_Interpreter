@@ -5,7 +5,8 @@ import re
 from main import Interpreter as inter
 from main import sliceAssig, instructions, bin_to_hex
 from time import sleep
-from Microcontroller import Stoplight, Seven_Segment, get_memory, ASCII_Characters
+from Microcontroller import Stoplight, Seven_Segment, get_memory, ASCII_Characters, write_to_memory_from_address, \
+    hex_to_bin
 
 global_interpreter = None
 stepping = False
@@ -120,9 +121,12 @@ class StopLightUI(Stoplight):
         self.memory = [value]
         self.set_values()
         self.clear_ui(canvas, *buttons)
-        # if 0 <= self.address < 4096:
-        #     get_memory()[self.address] = self.memory
-        #     print(f"changed memory[{self.address}] to {self.memory}")
+        if 0 <= self.address < 4096:
+            # compText(refresh=True)
+            write_to_memory_from_address(self.address,self.memory[0].zfill(8))
+            compText(refresh=True)
+            # get_memory()[self.address] = self.memory
+            # print(f"changed memory[{self.address}] to {self.memory}")
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
@@ -223,17 +227,12 @@ class SevenSegmentUI(Seven_Segment):
         self.memory = [value]
         self.set_values()
         self.clear_ui(canvas, *buttons)
-        # if 0 <= self.address < 4096:
-        #     get_memory()[self.address] = self.memory
-        #     print(f"changed memory[{self.address}] to {self.memory}")
+        if 0 <= self.address < 4096:
+            write_to_memory_from_address(self.address, self.memory[0].zfill(8))
+            compText(refresh=True)
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
-        # prev_addr = self.address
-        # if addr != prev_addr:
-        #     if 0 <= prev_addr < 4096:
-        #         get_memory()[prev_addr] = '0' * 8
-        #         print(f"changed memory[{prev_addr}] to {'0'*8}")
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -260,7 +259,7 @@ class ASCIICharactersUI(ASCII_Characters):
         self.y = y
 
     def render(self):
-        width = Font_Size * 8+4
+        width = Font_Size * 8 + 4
         height = Font_Size * 2
         x = self.x
         y = self.y
@@ -294,6 +293,116 @@ class ASCIICharactersUI(ASCII_Characters):
         self.clear_ui(*buttons)
         self.set_values()
         self.render()
+
+
+class HexKeyboard(object):
+    def __init__(self, addr, x, y):
+        self.address = addr
+        self.x = x
+        self.y = y
+        self.buttons = []
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{0}')
+        b.config(command=(lambda: self.sendText(0)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{1}')
+        b.config(command=(lambda: self.sendText(1)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{2}')
+        b.config(command=(lambda: self.sendText(2)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{3}')
+        b.config(command=(lambda: self.sendText(3)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{4}')
+        b.config(command=(lambda: self.sendText(4)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{5}')
+        b.config(command=(lambda: self.sendText(5)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{6}')
+        b.config(command=(lambda: self.sendText(6)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{7}')
+        b.config(command=(lambda: self.sendText(7)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{8}')
+        b.config(command=(lambda: self.sendText(8)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'{9}')
+        b.config(command=(lambda: self.sendText(9)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'A')
+        b.config(command=(lambda: self.sendText('A')))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'B')
+        b.config(command=(lambda: self.sendText('B')))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'C')
+        b.config(command=(lambda: self.sendText('C')))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'D')
+        b.config(command=(lambda: self.sendText('D')))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'E')
+        b.config(command=(lambda: self.sendText('E')))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(25, 25, 25), fg='white', font=(Font, Font_Size), text=f'F')
+        b.config(command=(lambda: self.sendText('F')))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 2), text=f'<<')
+        b.config(command=(lambda: self.move_addr(-1)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 2), text=f'>>')
+        b.config(command=(lambda: self.move_addr(1)))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 4), text=f'ENTER')
+        b.config(command=(lambda: self.setText()))
+        self.buttons.append(b)
+        b = Button(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 4), text=f'Clear')
+        b.config(command=(lambda: self.clearText()))
+        self.buttons.append(b)
+        b = Label(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 2), text=f'ADDR: 0')
+        self.buttons.append(b)
+        self.text = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        self.text.config(state=DISABLED)
+
+    def move_addr(self, val):
+        self.address = min(max(0, self.address + val), 4095)
+        self.render()
+
+    def setText(self):
+        if global_interpreter is not None:
+            compText(refresh=True)
+
+        txt = self.text.get('1.0', END)
+        # print(txt)
+        if len(txt.strip()) == 0:
+            return
+        write_to_memory_from_address(self.address, hex_to_bin(txt).zfill(8))
+        compText(refresh=True)
+
+    def sendText(self, txt):
+        txt = str(txt)
+        self.text.config(state=NORMAL)
+        self.text.insert(END, txt)
+        self.text.config(state=DISABLED)
+
+    def clearText(self):
+        self.text.config(state=NORMAL)
+        self.text.delete('1.0', END)
+        self.text.config(state=DISABLED)
+
+    def render(self):
+        width = 40*4
+        height = 160
+        self.text.place(x=self.x, y=self.y, width=width, height=20)
+        for i in range(20):
+            x = (i % 4) * 40 + self.x
+            y = (i // 4) * 20 + self.y + 20
+            b = self.buttons[i]
+            b.place(x=x, y=y, width=40, height=20)
+        self.buttons[20].place(x=self.x, y=5 * 20 + self.y + 20, width=width, height=20)
+        self.buttons[20].config(text=f"ADDR: {self.address}")
 
 
 def highlight_text(txt, tag_name, lineno, start_char, end_char, bg_color=None, fg_color=None, bold=False):
@@ -373,7 +482,12 @@ def compText(*args, step=False, refresh=False):
     sleep(0.05)
     c_addr = 0
     hex_lines = None
-    if not step:
+    if refresh:
+        mem_table = step_table
+        m = interpreter.memory
+        # print(*m,sep='\n')
+        hex_lines = interpreter.to_hex3(m)
+    elif not step:
         step_table = []
         interpreter.clear_memory()
         _, mem_table = interpreter.to_memory_2()
@@ -394,6 +508,7 @@ def compText(*args, step=False, refresh=False):
         step_table += table
         mem_table = step_table
         m = interpreter.memory
+
         hex_lines = interpreter.to_hex3(m)
         # bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
         # hex_lines = [bin_to_hex(b, 4) if b != "XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
@@ -626,6 +741,8 @@ sl = StopLightUI(-1, 595, 20)
 ss = SevenSegmentUI(-1, 570, 210)
 sl.render()
 ss.render()
-asc = ASCIICharactersUI(-1,596,400)
+asc = ASCIICharactersUI(-1, 596, 400)
 asc.render()
+keyboard = HexKeyboard(0, 565, 460)
+keyboard.render()
 root.mainloop()

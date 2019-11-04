@@ -526,6 +526,9 @@ class Interpreter(object):
         #     table.append(f'R{i} : {r}')
         return get_memory(), list(dict.fromkeys(table))
 
+    def get_memory(self):
+        return get_memory()
+
     def to_step_memory(self):
         table = []
         functs = [None] * 4096
