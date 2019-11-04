@@ -148,6 +148,18 @@ class Seven_Segment(Output):
         self.lights = [i == '1' for i in b[:7]]
         self.control = b[-1] == '0'
 
+class ASCII_Characters(Output):
+    def __init__(self, address: int):
+        super().__init__(address,1)
+        self.ascii_list = []*8
+
+    def set_values(self):
+        if len(self.memory) != 8 or self.address < 0 or self.address >= 4096 - 8:
+            return
+
+        for i in range(len(self.memory)):
+            b = self.memory[i]
+            self.ascii_list[i] = bin_to_ascii(b)
 
 Things = {
     "Stoplight": Output(-1),
