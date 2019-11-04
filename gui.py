@@ -122,19 +122,13 @@ class StopLightUI(Stoplight):
         self.set_values()
         self.clear_ui(canvas, *buttons)
         if 0 <= self.address < 4096:
-            # compText(refresh=True)
             write_to_memory_from_address(self.address,self.memory[0].zfill(8))
             compText(refresh=True)
-            # get_memory()[self.address] = self.memory
-            # print(f"changed memory[{self.address}] to {self.memory}")
+
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
-        # prev_addr = self.address
-        # if addr != prev_addr:
-        #     if 0 <= prev_addr < 4096:
-        #         get_memory()[prev_addr] = '0' * 8
-        #         print(f"changed memory[{prev_addr}] to {'0'*8}")
+
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -148,7 +142,6 @@ class StopLightUI(Stoplight):
         if len(memory) > 0:
             if self.memory == '0' * 8:
                 self.memory = memory
-        # get_memory()[self.address] = self.memory
         self.clear_ui(canvas, *buttons)
         self.set_values()
         self.render()
@@ -170,13 +163,11 @@ class SevenSegmentUI(Seven_Segment):
         x = self.x
         y = self.y
 
-        # print(self.lights)
 
         L = [(0, 0, 0) if not i else (0, 255, 0) for i in self.lights]
         a = [rgb(*tuple_mult(l, int(self.control))) for l in L]
         b = [rgb(*tuple_mult(l, int(not self.control))) for l in L]
 
-        # print(L, a, b, sep="\n")
 
         canvas.create_rectangle(10, 10, 10, 57, fill=a[0], outline=a[0], width=0)
         canvas.create_rectangle(10, 10, 10 + 60, 10, fill=a[1], outline=a[1], width=0)

@@ -116,7 +116,6 @@ class Stoplight(Output):
         s1 = b[:3]
         s2 = b[3:6]
         control = b[6:8]
-        print
         self.green = s1[0] == "1", s2[0] == "1"
         self.yellow = s1[1] == "1", s2[1] == "1"
         self.red = s1[2] == "1", s2[2] == "1"
