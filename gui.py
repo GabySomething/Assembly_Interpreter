@@ -155,15 +155,58 @@ class SevenSegmentUI(Seven_Segment):
         super().__init__(address)
         self.x = x
         self.y = y
+        self.memory = ["00000000"]
+        self.set_values()
 
     def render(self):
         width = 150
         height = 135
+
         canvas = Canvas(root, width=width, height=height, highlightthickness=0, bg=rgb(25, 25, 25))
         x = self.x
         y = self.y
 
+        # print(self.lights)
+
+        L = [(0, 0, 0) if not i else (0, 255, 0) for i in self.lights]
+        a = [rgb(*tuple_mult(l, int(self.control))) for l in L]
+        b = [rgb(*tuple_mult(l, int(not self.control))) for l in L]
+
+        # print(L, a, b, sep="\n")
+
+        canvas.create_rectangle(10, 10, 10, 57, fill=a[0], outline=a[0], width=0)
+        canvas.create_rectangle(10, 10, 10 + 60, 10, fill=a[1], outline=a[1], width=0)
+        canvas.create_rectangle(10 + 60, 10, 10 + 60, 57, fill=a[2], outline=a[2], width=0)
+        canvas.create_rectangle(10 + 60, 57, 10 + 60, 57 + 57, fill=a[3], outline=a[3], width=0)
+        canvas.create_rectangle(10, 57 + 57, 10 + 60, 57 + 57, fill=a[4], outline=a[4], width=0)
+        canvas.create_rectangle(10, 57, 10, 57 + 57, fill=a[5], outline=a[5], width=0)
+        canvas.create_rectangle(10, 57, 10 + 60, 57, fill=a[6], outline=a[6], width=0)
+
+        canvas.create_rectangle(10 + 70, 10, 10 + 70, 10 + 57, fill=b[0], outline=b[0], width=0)
+        canvas.create_rectangle(10 + 70, 10, 10 + 130, 10, fill=b[1], outline=b[1], width=0)
+        canvas.create_rectangle(10 + 70 + 60, 10, 10 + 70 + 60, 10 + 57, fill=b[2], outline=b[2], width=0)
+        canvas.create_rectangle(10 + 70 + 60, 57, 10 + 70 + 60, 57 + 57, fill=b[3], outline=b[3], width=0)
+        canvas.create_rectangle(10 + 70, 57 + 57, 10 + 130, 57 + 57, fill=b[4], outline=b[4], width=0)
+        canvas.create_rectangle(10 + 70, 57, 10 + 70, 57 + 57, fill=b[5], outline=b[5], width=0)
+        canvas.create_rectangle(10 + 70, 57, 10 + 130, 57, fill=b[6], outline=b[6], width=0)
+
         canvas.place(x=x, y=y)
+
+        binary_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        binary_setter.place(x=x, y=y + height, width=width - 30, height=20)
+        if len(self.memory) > 0:
+            binary_setter.insert("1.0", self.memory[0])
+        address_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        address_setter.place(x=x, y=y + height + 20, width=40, height=20)
+        address_setter.insert('1.0', self.address)
+        butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
+                       highlightthickness=0)
+        butt2.place(x=x + 40, y=y + height + 20, width=60, height=20)
+        butt = Button(root, text="Set", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
+                      highlightthickness=0)
+        butt.place(x=x + width - 30, y=y + height, width=30, height=20)
+        butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2)))
+        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2)))
 
     def clear_ui(self, canvas=None, *buttons):
         if canvas is not None:
