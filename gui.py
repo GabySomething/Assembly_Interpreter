@@ -480,6 +480,7 @@ def compText(*args, step=False, refresh=False):
 
     interpreter = global_interpreter
     interpreter.instruction_check()
+    # print(interpreter.token_lines)
 
     sleep(0.05)
     c_addr = 0

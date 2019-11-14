@@ -69,6 +69,7 @@ class Interpreter(object):
         self.lines: list = list()
         self.token_lines = list()
         self.index = 0
+        self.last_token = None
         self.function_lines = None
         lines = text.replace(",", " ").split("\n")
         for line in lines:
@@ -85,6 +86,7 @@ class Interpreter(object):
         self.current_line: int = 0
 
     def token_type(self, word: str):
+        # print(f"last token was {self.last_token}")
         if word.lower() == "org":
             return TokenType.ORG
         if word.lower() == "db":
@@ -116,7 +118,9 @@ class Interpreter(object):
                     word = word.replace("#", "")
                 elif token1 == TokenType.REGISTER:
                     word = word.lower().replace("r", "")
-                tokens.append(Token(word, token1, constant=is_constant))
+                appending_token = Token(word, token1, constant=is_constant)
+                tokens.append(appending_token)
+                self.last_token = appending_token
                 continue
             self.error("Invalid token,  looking for: [" + (
                 ", ".join(t.value for t in Token_Type)) + "] got " + self.token_type(word).value, line_number,
@@ -470,6 +474,7 @@ class Interpreter(object):
 
     def to_memory_2(self):
         table = []
+        # print("mem2")
         self.function_lines = None
         self.index = 0
         if not self.is_clean():
@@ -632,6 +637,9 @@ class Interpreter(object):
             print("starting stepper....")
         if self.function_lines is None:
             self.create_program_counter()
+            set_program_counter(0)
+        # self.index = get_program_counter()
+
         i = self.index
         fl = self.function_lines
         if fl is None:
@@ -639,6 +647,7 @@ class Interpreter(object):
         if i >= len(fl):
             print("starting again....")
             self.index = 0
+            set_program_counter(0)
             return None
         self.index += 1
         if fl[i] is None or fl[i] == []:
@@ -651,6 +660,7 @@ class Interpreter(object):
         if fl[i] is None or fl[i] == []:
             print("starting again....")
             self.index = 0
+            set_program_counter(0)
             return None
 
         current: list = fl[i]
@@ -669,7 +679,6 @@ class Interpreter(object):
             instruction(addr, *args)
             if len(current) == 5:
                 table = [f"VAR | {current[4]} {args}"]
-
         return addr, table
 
     def get_register_table(self):
@@ -895,7 +904,7 @@ class Interpreter(object):
                         self.exit_system()
                         if self.dead:
                             return
-                    if arg == "c" and not tok.constant:
+                    if arg == "c" and not tok.constant and not tok.TokenType == TokenType.INTEGER and not tok.TokenType == TokenType.VARIABLE:
                         self.error("Expected a CONSTANT, got a {typ}".format(typ=tok.TokenType.value), -1, True,
                                    instruction=token.value.upper())
                         self.exit_system()
