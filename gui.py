@@ -492,7 +492,11 @@ def compText(*args, step=False, refresh=False):
     elif not step:
         step_table = []
         interpreter.clear_memory()
-        _, mem_table = interpreter.to_memory_2()
+        unpack = interpreter.to_memory_2()
+        if unpack is None:
+            print("Empty")
+            return
+        _, mem_table = unpack
         hex_lines = interpreter.to_hex3()
     else:
         if not stepping:
@@ -644,13 +648,13 @@ def file_save_project(*args):
 
 
 def file_open_project(*args):
-    f = filedialog.askopenfilename(filetypes=(("ASM  Files", "*.asm"),))
+    opened_file = filedialog.askopenfilename(filetypes=(("ASM  Files", "*.asm"),))
     code = None
     try:
-        code = open(f).read()
+        code = open(opened_file).read()
     except FileNotFoundError:
         return
-    if f is None:
+    if opened_file is None:
         return
     text.delete("1.0", END)
     text.insert("1.0", code)
@@ -658,12 +662,12 @@ def file_open_project(*args):
 
 
 def file_save(*args):
-    f = filedialog.asksaveasfile(mode='w', defaultextension=".obj")
-    if f is None:
+    file1 = filedialog.asksaveasfile(mode='w', defaultextension=".obj")
+    if file1 is None:
         return
     text2save = str(text_hex.get(1.0, END))
-    f.write(text2save)
-    f.close()
+    file1.write(text2save)
+    file1.close()
 
 
 def toggle_mem(*args):

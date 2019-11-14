@@ -70,7 +70,7 @@ class Interpreter(object):
         self.token_lines = list()
         self.index = 0
         self.function_lines = None
-        lines = text.replace(",", " ").split("\n")  ##hmmmmmmmmmmmm
+        lines = text.replace(",", " ").split("\n")
         for line in lines:
             line: str = line
             if "//" in line:
@@ -109,14 +109,14 @@ class Interpreter(object):
         for word in token_list:
             word: str = word
             if isA(self.token_type(word), *Token_Type):
-                t: TokenType = self.token_type(word)
-                if t == TokenType.INTEGER:
+                token1: TokenType = self.token_type(word)
+                if token1 == TokenType.INTEGER:
                     if word.startswith("#"):
                         is_constant = True
                     word = word.replace("#", "")
-                elif t == TokenType.REGISTER:
+                elif token1 == TokenType.REGISTER:
                     word = word.lower().replace("r", "")
-                tokens.append(Token(word, t, constant=is_constant))
+                tokens.append(Token(word, token1, constant=is_constant))
                 continue
             self.error("Invalid token,  looking for: [" + (
                 ", ".join(t.value for t in Token_Type)) + "] got " + self.token_type(word).value, line_number,
@@ -356,7 +356,7 @@ class Interpreter(object):
             return None, origin
         return tokens, origin
 
-    def make_tokens_2(self, save_errors: bool = True):
+    def make_tokens_2(self, save_errors: bool = True): #old make tokens version (DELETE PENDING)
         token_lines: list = list()
         org: int = 0
         for i in range(len(self.lines)):
@@ -409,9 +409,9 @@ class Interpreter(object):
         for key in self.errors:
             print(self.errors.get(key))
         self.dead = True
-        # exit(code)
+        # exit(code) #verify later
 
-    def to_memory(self):
+    def to_memory(self): #old to memory (DELETE PENDING)
         memory_line: list = [[]] * 256
         if not self.is_clean():
             return None
@@ -601,7 +601,7 @@ class Interpreter(object):
         # clear_memory()
         self.function_lines = mem_lines
 
-    # def next(self):
+    # def next(self): #DELETE PENDING
     #     if self.function_lines is None:
     #         self.create_program_counter()
     #     i = self.index
@@ -680,7 +680,7 @@ class Interpreter(object):
         while addr is not None:
             addr, _ = self.next()
 
-    # def run_line(self,l):
+    # def run_line(self,l): #DELETE PENDING
     #     table = []
     #     line = self.token_lines[l]
     #     if line is not None:
@@ -812,7 +812,7 @@ class Interpreter(object):
             binary_lines.append(binary_line)
         return binary_lines
 
-    def to_bin_list(self):
+    def to_bin_list(self): #old to bin list (DELETE PENDING)
         decimal_lines: list = self.to_decimal()
         binary_lines: list = list()
         if decimal_lines is None:
@@ -858,14 +858,14 @@ class Interpreter(object):
             token: Token = None
             token_pos = 0
             label = 0
-            for ind in range(len(line)):
-                tok: Token = line[ind]
+            for line_index in range(len(line)):
+                tok: Token = line[line_index]
                 if tok.TokenType == TokenType.LABEL:
                     label += 1
                     continue
                 if tok.TokenType == TokenType.INSTRUCTION:
                     token = tok
-                    token_pos = ind
+                    token_pos = line_index
                     break
             if token is not None:
                 index = instructions.index(token.value.upper())
@@ -880,9 +880,9 @@ class Interpreter(object):
                         return
                 if arg_number == 0:
                     continue
-                for ind in range(len(arg_types)):
-                    tok: Token = line[ind + token_pos + 1]
-                    arg = arg_types[ind]
+                for line_index in range(len(arg_types)):
+                    tok: Token = line[line_index + token_pos + 1]
+                    arg = arg_types[line_index]
                     if arg == "r" and tok.TokenType != TokenType.REGISTER:
                         self.error("Expected a REGISTER, got a {typ}".format(typ=tok.TokenType.value), -1, True,
                                    instruction=token.value.upper())
@@ -947,3 +947,5 @@ class Interpreter(object):
 # output.write("\n".join(inter.to_hex()))
 # print("Hex code written to Output.obj")
 # output.close()
+
+#delete pending
