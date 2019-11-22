@@ -505,7 +505,7 @@ def compText(*args, step=False, refresh=False):
             interpreter = global_interpreter
             interpreter.clear_memory()
         stepping = True
-        unpack = interpreter.next()
+        unpack = interpreter.next2()
         if unpack is None:
             print("Stepping is done")
             step_table = []

@@ -3,10 +3,13 @@ import inspect
 
 Memory = ["0" * 8 for i in range(4096)]
 Registers = ["0"] * 8
+pastRegisters = ["0"] * 8
 Buffer = ["0" * 8 for i in range(4)]
-Program_Counter = 0
+Program_Counter = 0  # THE NEXT INSTRUCTION
+conditional_bit = 0
 
 
+# STACK POINTER= CURRENT INSTRUCTION BEING EXECUTED.
 def set_program_counter(value):
     global Program_Counter
     Program_Counter = value
@@ -28,10 +31,21 @@ def get_registers():
 
 
 def get_register_table():
-    global Registers
+    global Registers, conditional_bit, Program_Counter
     result = ""
     for i in range(8):
-        result += f'R{i} |\t {Registers[i]}\n'
+        if i == 7:
+            Registers[i] = Program_Counter
+        value = Registers[i]
+        if i == 3 or i == 4:
+            value = hex_to_bin(value, 8)
+        if Registers[i] == pastRegisters[i]:
+            result += f'R{i} :\t {value}\n'
+        else:
+            result += f' *R{i} :\t {value}\n'
+        pastRegisters[i] = Registers[i]
+
+    result += f'conditional_bit :\t {conditional_bit}\n'
     return result
 
 
@@ -370,21 +384,30 @@ def DB(address: int, *args, memory=None):
 def LOAD(R: int, address: int, affect_mem=True):
     global Registers, Memory
     if affect_mem:
-        Registers[R] = bin_to_hex(Memory[address])
+        if R != 0:
+            Registers[R] = bin_to_hex(Memory[address])
+        else:
+            Registers[0] = 0
     return format_function(0, 2, R, address)
 
 
 def LOADIM(R: int, const: str, affect_mem=True):
     global Registers  # const must be a hex
     if affect_mem:
-        Registers[R] = const
+        if R != 0:
+            Registers[R] = const
+        else:
+            Registers[0] = 0
     return format_function(1, 2, R, hex_to_dec(str(const)))
 
 
 def POP(R: int, current_address=0, affect_mem=True):
     global Registers, Memory
     if affect_mem:
-        Registers[R] = bin_to_hex(Memory[current_address + 1])
+        if R != 0:
+            Registers[R] = bin_to_hex(Memory[current_address + 1])
+        else:
+            Registers[0] = 0
     return format_function(2, 2, R, current_address + 1)
 
 
@@ -407,28 +430,40 @@ def PUSH(R: int, current_address=1, affect_mem=True):
 def LOADRIND(R1: int, R2: int, affect_mem=True):
     global Registers, Memory
     if affect_mem:
-        Registers[R1] = bin_to_hex(Memory[int(Registers[R2], 16)])
+        if R1 != 0:
+            Registers[R1] = bin_to_hex(Memory[int(Registers[R2], 16)])
+        else:
+            Registers[0] = 0
     return format_function(5, 1, R1, R2)
 
 
 def STORERIND(R1: int, R2: int, affect_mem=True):
     global Registers, Memory
     if affect_mem:
-        Registers[R2] = bin_to_hex(Memory[int(Registers[R1], 16)])
+        if R2 != 0:
+            Registers[R2] = bin_to_hex(Memory[int(Registers[R1], 16)])
+        else:
+            Registers[0] = 0
     return format_function(6, 1, R1, R2)
 
 
 def ADD(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]))
+        if Ra != 0:
+            Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]))
+        else:
+            Registers[0] = 0
     return format_function(7, 1, Ra, R1, R2)
 
 
 def SUB(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) - hex_to_dec(Registers[R2]))
+        if Ra != 0:
+            Registers[Ra] = hexadecimal(hex_to_dec(Registers[R1]) - hex_to_dec(Registers[R2]))
+        else:
+            Registers[0] = 0
     return format_function(8, 1, Ra, R1, R2)
 
 
@@ -437,7 +472,10 @@ def ADDIM(R: int, const: str, affect_mem=True):
     if affect_mem:
         current = hex_to_dec(Registers[R])
         decimal = hex_to_dec(const)
-        Registers[R] = hexadecimal(current + decimal)
+        if R != 0:
+            Registers[R] = hexadecimal(current + decimal)
+        else:
+            Registers[0] = 0
     return format_function(9, 2, R, const)
 
 
@@ -446,42 +484,50 @@ def SUBIM(R: int, const: str, affect_mem=True):
     if affect_mem:
         current = hex_to_dec(Registers[R])
         decimal = hex_to_dec(const)
-        Registers[R] = hexadecimal(current - decimal)
+        if R != 0:
+            Registers[R] = hexadecimal(current - decimal)
+        else:
+            Registers[0] = 0
     return format_function(10, 2, R, const)
 
 
 def AND(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = str(int(hex_to_dec(Registers[R1]) * hex_to_dec(Registers[R2]) != 0)).zfill(4)
+        if Ra != 0:
+            Registers[Ra] = str(int(hex_to_dec(Registers[R1]) * hex_to_dec(Registers[R2]) != 0)).zfill(4)
     return format_function(11, 1, Ra, R1, R2)
 
 
 def OR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = str(int(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]) != 0)).zfill(4)
+        if Ra != 0:
+            Registers[Ra] = str(int(hex_to_dec(Registers[R1]) + hex_to_dec(Registers[R2]) != 0)).zfill(4)
     return format_function(12, 1, Ra, R1, R2)
 
 
 def XOR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = str(int(hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R2]))).zfill(4)
+        if Ra != 0:
+            Registers[Ra] = str(int(hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R2]))).zfill(4)
     return format_function(13, 1, Ra, R1, R2)
 
 
 def NOT(Ra: int, R1: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = bin_to_hex(not_bin(hex_to_bin(Registers[R1], 8)))
+        if Ra != 0:
+            Registers[Ra] = bin_to_hex(not_bin(hex_to_bin(Registers[R1], 8)))
     return format_function(14, 1, Ra, R1)
 
 
 def NEG(Ra: int, R1: int, affect_mem=True):
     global Registers
     if affect_mem:
-        Registers[Ra] = hexadecimal(-hex_to_dec(Registers[R1]))
+        if Ra != 0:
+            Registers[Ra] = hexadecimal(-hex_to_dec(Registers[R1]))
     return format_function(15, 1, Ra, R1)
 
 
@@ -496,7 +542,10 @@ def SHIFTR(Ra: int, R1: int, R2: int, affect_mem=True):
         shifts %= len(b)
         b = "0" * shifts + b[:-shifts]
         h = bin_to_hex(b, 4)
-        Registers[Ra] = h
+        if Ra != 0:
+            Registers[Ra] = h
+        else:
+            Registers[Ra] = 0
     return format_function(16, 1, Ra, R1, R2)
 
 
@@ -511,7 +560,10 @@ def SHIFTL(Ra: int, R1: int, R2: int, affect_mem=True):
         shifts %= len(b)
         b = b[:shifts] + "0" * shifts
         h = bin_to_hex(b, 4)
-        Registers[Ra] = h
+        if Ra != 0:
+            Registers[Ra] = h
+        else:
+            Registers[Ra] = 0
     return format_function(17, 1, Ra, R1, R2)
 
 
@@ -523,7 +575,10 @@ def ROTAR(Ra: int, R1: int, R2: int, affect_mem=True):
         shifts %= len(b)
         b = b[-shifts:] + b[:-shifts]
         h = bin_to_hex(b, 4)
-        Registers[Ra] = h
+        if Ra != 0:
+            Registers[Ra] = h
+        else:
+            Registers[Ra] = 0
     return format_function(18, 1, Ra, R1, R2)
 
 
@@ -537,31 +592,65 @@ def ROTAL(Ra: int, R1: int, R2: int, affect_mem=True):
             m = (i + shifts) % len(b)
             result += b[m]
         h = bin_to_hex(result, 4)
-        Registers[Ra] = h
+        if Ra != 0:
+            Registers[Ra] = h
+        else:
+            Registers[Ra] = 0
     return format_function(19, 1, Ra, R1, R2)
 
 
-def JMPRIND(R: int, affect_mem=True):
+def JMPRIND(Ra: int, affect_mem=True):
     if affect_mem:
-        pass
-    return format_function(20, 1, R)
+        global Registers, Program_Counter
+        Program_Counter = hex_to_dec(Registers[Ra])  # set program counter to Content of Ra
+        # we need to specify n bits for program counter
+        # pass
+
+    return format_function(20, 1, Ra)
 
 
 def JMPADDR(*args, affect_mem=True):
     if affect_mem:
-        pass
+        global Registers, Program_Counter
+        # verify this function.
+        # print("address to JUMP")
+        # print(args)
+        # print(bin_to_dec(Memory[args[0]]) )
+        Program_Counter = args[0]  # set program counter to Content of Ra
+        print(f'New program counter = {args[0]}')
+        # Program_Counter = 999
+        # we need to specify n bits for program counter
+        # pass
+
     return format_function(21, 3, *args)
 
 
 def JCONDRIN(R: int, affect_mem=True):
     if affect_mem:
-        pass
+        # WE NEED TO CREATE GLOBAL CONDITIONAL BIT -done.
+        global conditional_bit
+        if conditional_bit == 1:
+            global Registers, Program_Counter
+            Program_Counter = hex_to_dec(Registers[R])  # set program counter to Content of Ra
+            # we need to specify n bits for program counter
+            conditional_bit = 0
+
+        # pass
     return format_function(22, 1, R)
 
 
 def JCONDADDR(address: int, affect_mem=True):
     if affect_mem:
-        pass
+        global conditional_bit
+        if conditional_bit == 1:
+            global Registers, Program_Counter  # PC IS CURRENTLY IN DECIMAL.
+            # Program_Counter =  bin_to_dec(Memory[address]) #ASSUMING PC IS-...
+            print(address)
+            print(Memory[address])
+            Program_Counter = address
+            # THE NEXT INSTRUCTION.
+            conditional_bit = 0
+        # pass
     return format_function(23, 3, address)
 
 
@@ -583,37 +672,60 @@ def LOOP(Ra: int, address: int, affect_mem=True):
 def GRT(R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        # result = hex_to_dec(Registers[R1]) > hex_to_dec(Registers[R1])
-        pass
+        global conditional_bit
+        if (hex_to_dec(Registers[R1])) > (hex_to_dec(Registers[R2])):
+            conditional_bit = 1
+        else:
+            conditional_bit = 0
+
+        # pass
     return format_function(25, 1, R1, R2)
 
 
 def GRTEQ(R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        # result = hex_to_dec(Registers[R1]) >= hex_to_dec(Registers[R1])
-        pass
+        global conditional_bit
+        if (hex_to_dec(Registers[R1])) >= (hex_to_dec(Registers[R2])):
+            conditional_bit = 1
+        else:
+            conditional_bit = 0
+
+            #pass
     return format_function(26, 1, R1, R2)
 
 
 def EQ(R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        # result = hex_to_dec(Registers[R1]) == hex_to_dec(Registers[R1])
-        pass
+        global conditional_bit
+        if (hex_to_dec(Registers[R1])) == (hex_to_dec(Registers[R2])):
+            conditional_bit = 1
+
+        else:
+            conditional_bit = 0
+
+        #pass
     return format_function(27, 1, R1, R2)
 
 
 def NEQ(R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        # result = hex_to_dec(Registers[R1]) != hex_to_dec(Registers[R1])
-        pass
+
+        global conditional_bit
+        if (hex_to_dec(Registers[R1])) != (hex_to_dec(Registers[R2])):
+            conditional_bit = 1
+        else:
+            conditional_bit = 0
+
+       # pass
     return format_function(28, 1, R1, R2)
 
 
 def NOP(*args, affect_mem=True):
     if affect_mem:
+        # do nothing -done
         pass
     return format_function(29, 1, *args)
 
@@ -621,6 +733,7 @@ def NOP(*args, affect_mem=True):
 def CALL(current_address=0, affect_mem=True):
     global Memory
     if affect_mem:
+        # execute the sent address but continue your program normally afterwards.
         pass
     return format_function(30, 3, current_address)
 

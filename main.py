@@ -606,6 +606,24 @@ class Interpreter(object):
         # clear_memory()
         self.function_lines = mem_lines
 
+    def create_program_counter_2(self):
+        self.index = 0
+        unpack = self.to_step_memory()
+        if unpack is None:
+            self.exit_system()
+            return
+        mem_lines, _ = unpack
+        # mem_lines = mem_lines.copy()
+        # clear_memory()
+        self.function_lines = mem_lines
+        for i in range(len(self.function_lines)):
+            f = self.function_lines[i]
+            if f is None:
+                continue
+            if f[0] == "DB":
+                f[2](f[1], *f[3])
+                self.function_lines[i] = None
+
     # def next(self): #DELETE PENDING
     #     if self.function_lines is None:
     #         self.create_program_counter()
@@ -669,6 +687,7 @@ class Interpreter(object):
         instruction = current[2]
         table = []
         set_program_counter(addr)
+        # print(f'index: {self.index}, pc: {addr}')
         print(f"Program Counter: {get_program_counter()}")
         if current[0] == "INSTR":
             opcode = current[4]
@@ -679,6 +698,58 @@ class Interpreter(object):
             instruction(addr, *args)
             if len(current) == 5:
                 table = [f"VAR | {current[4]} {args}"]
+        return addr, table
+
+    def next2(self):
+        if self.index == 0:
+            print("starting stepper....")
+        if self.function_lines is None:
+            self.create_program_counter_2()
+            set_program_counter(0)
+        # self.index = get_program_counter()
+
+        i = get_program_counter()
+        fl = self.function_lines
+        if fl is None:
+            return
+        if i >= len(fl):
+            print("starting again....")
+            self.index = 0
+            set_program_counter(0)
+            return None
+        set_program_counter(i+1)
+        if fl[i] is None or fl[i] == []:
+            for index in range(i, len(fl)):
+                if fl[index] is not None and fl[index] != []:
+                    i = index
+                    set_program_counter(i+1)
+                    break
+
+        if fl[i] is None or fl[i] == []:
+            print("starting again....")
+            self.index = 0
+            set_program_counter(0)
+            return None
+        # set_program_counter(self.index)
+        bk = get_program_counter()
+        current: list = fl[i]
+        addr = current[1]
+        args = current[3]
+        instruction = current[2]
+        table = []
+        set_program_counter(addr)
+        print(f"Program Counter: {get_program_counter()}")
+        set_program_counter(bk)
+        if current[0] == "INSTR":
+            opcode = current[4]
+            write_to_memory_from_address(addr, instruction(*args))
+            table = [f"INSTR | {instructions[opcode]} {args}"]
+        elif current[0] == "DB":
+            # print(*args)
+            instruction(addr, *args)
+            if len(current) == 5:
+                table = [f"VAR | {current[4]} {args}"]
+        # set_program_counter(bk)
         return addr, table
 
     def get_register_table(self):
