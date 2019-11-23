@@ -9,7 +9,6 @@ Program_Counter = 0  # THE NEXT INSTRUCTION
 conditional_bit = 0
 
 
-# STACK POINTER= CURRENT INSTRUCTION BEING EXECUTED.
 def set_program_counter(value):
     global Program_Counter
     Program_Counter = value
@@ -139,15 +138,6 @@ class Stoplight(Output):
 
         if control == "11":
             self.intermittent = True
-
-    # @property
-    # def space(self):
-    #     return super().space
-    #
-    # @space.setter
-    # def space(self, value):
-    #     super().space = value
-    #     self.set_values()
 
 
 class Seven_Segment(Output):
@@ -378,7 +368,6 @@ def DB(address: int, *args, memory=None):
     global Memory
     for i in range(len(args)):
         e = args[i]
-        # print(f'Writing {e} to {address + i}...')
         write_to_memory_from_address(address + i, binary(e, 8), memory=memory)
 
 
@@ -628,12 +617,10 @@ def JMPADDR(*args, affect_mem=True):
 
 def JCONDRIN(R: int, affect_mem=True):
     if affect_mem:
-        # WE NEED TO CREATE GLOBAL CONDITIONAL BIT -done.
         global conditional_bit
         if conditional_bit == 1:
             global Registers, Program_Counter
-            Program_Counter = hex_to_dec(Registers[R])  # set program counter to Content of Ra
-            # we need to specify n bits for program counter
+            Program_Counter = hex_to_dec(Registers[R])
             conditional_bit = 0
 
         # pass
@@ -645,13 +632,10 @@ def JCONDADDR(address: int, affect_mem=True):
         global conditional_bit
         if conditional_bit == 1:
             global Registers, Program_Counter  # PC IS CURRENTLY IN DECIMAL.
-            # Program_Counter =  bin_to_dec(Memory[address]) #ASSUMING PC IS-...
             print(address)
             print(Memory[address])
             Program_Counter = address
-            # THE NEXT INSTRUCTION.
             conditional_bit = 0
-        # pass
     return format_function(23, 3, address)
 
 
@@ -662,9 +646,7 @@ def LOOP(Ra: int, address: int, affect_mem=True):
         if address % 2 != 0:
             address += 1
         instruction = Memory[address] + Memory[address + 1]
-        # print(f'The loop is gonna loop {n} times')
         for i in range(n):
-            # print(f"looping instruction {instruction}")
             binary_to_instructions(instruction, address)
         Registers[Ra] = '0'
     return format_function(24, 2, Ra, address)
@@ -678,8 +660,6 @@ def GRT(R1: int, R2: int, affect_mem=True):
             conditional_bit = 1
         else:
             conditional_bit = 0
-
-        # pass
     return format_function(25, 1, R1, R2)
 
 
@@ -692,7 +672,6 @@ def GRTEQ(R1: int, R2: int, affect_mem=True):
         else:
             conditional_bit = 0
 
-            #pass
     return format_function(26, 1, R1, R2)
 
 
@@ -806,24 +785,3 @@ def binary_to_instructions(b: str, address: int, write=False):
         write_to_memory_from_address(address, instruction(*args))
     else:
         instruction(*args)
-
-# write_to_memory_from_address(0, LOAD(5, 25))
-# write_to_memory_from_address(3, LOADIM(6, "2"))
-
-# show_memory(10)
-# show_registers()
-
-# wm = write_to_memory_from_address
-# DB(25, 17, 7, 8, 9, 5, 2, 2, 20)
-# write_to_memory_from_address(0, LOAD(5, 25))
-# write_to_memory_from_address(2, LOAD(3, 26))
-# write_to_memory_from_address(4, ADD(1, 5, 3))
-# wm(6, ADDIM(6, '1'))
-# wm(8, ADDIM(6, '8'))
-# wm(10, NOT(4, 6))
-# wm(12, NEG(7, 6))  ###WTF
-# wm(14, LOOP(3, 6))
-#
-# show_memory(30)
-# show_hex_memory(30)
-# show_registers()

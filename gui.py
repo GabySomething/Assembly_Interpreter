@@ -20,12 +20,6 @@ line_numbers = []
 line_numbers_hex = [None] * 2048
 
 
-#
-# def sliceAssig(l: list, lower: int, upper: int, value) -> list:
-#     l[lower:upper] = [value] * (upper - lower)
-#     return l
-
-
 def rgb(color, *args):
     if len(args) == 2:
         color = color, args[0], args[1]
@@ -124,19 +118,11 @@ class StopLightUI(Stoplight):
         self.set_values()
         self.clear_ui(canvas, *buttons)
         if 0 <= self.address < 4096:
-            # compText(refresh=True)
             write_to_memory_from_address(self.address, self.memory[0].zfill(8))
             compText(refresh=True)
-            # get_memory()[self.address] = self.memory
-            # print(f"changed memory[{self.address}] to {self.memory}")
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
-        # prev_addr = self.address
-        # if addr != prev_addr:
-        #     if 0 <= prev_addr < 4096:
-        #         get_memory()[prev_addr] = '0' * 8
-        #         print(f"changed memory[{prev_addr}] to {'0'*8}")
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -150,7 +136,6 @@ class StopLightUI(Stoplight):
         if len(memory) > 0:
             if self.memory == '0' * 8:
                 self.memory = memory
-        # get_memory()[self.address] = self.memory
         self.clear_ui(canvas, *buttons)
         self.set_values()
         self.render()
@@ -172,13 +157,11 @@ class SevenSegmentUI(Seven_Segment):
         x = self.x
         y = self.y
 
-        # print(self.lights)
 
         L = [(0, 0, 0) if not i else (0, 255, 0) for i in self.lights]
         a = [rgb(*tuple_mult(l, int(self.control))) for l in L]
         b = [rgb(*tuple_mult(l, int(not self.control))) for l in L]
 
-        # print(L, a, b, sep="\n")
 
         canvas.create_rectangle(10, 10, 10, 57, fill=a[0], outline=a[0], width=0)
         canvas.create_rectangle(10, 10, 10 + 60, 10, fill=a[1], outline=a[1], width=0)
@@ -248,7 +231,6 @@ class SevenSegmentUI(Seven_Segment):
         if len(memory) > 0:
             if self.memory == '0' * 8:
                 self.memory = memory
-        # get_memory()[self.address] = self.memory
         self.clear_ui(canvas, *buttons)
         self.set_values()
         self.render()
@@ -436,11 +418,6 @@ def show_line_numbers(text: Text, line_num):
     label_width = 40
     yoffset = 20
 
-    # if len(text_lines) == 1:
-    #     for label in line_num:
-    #         if label is not None:
-    #             label.place(x=-100, y=-100, height=18, width=label_width)
-
     for i in range(len(text_lines)):
         dline = text.dlineinfo(tk_pos(i + 1, 0))
         if dline is None:
@@ -480,7 +457,6 @@ def compText(*args, step=False, refresh=False):
 
     interpreter = global_interpreter
     interpreter.instruction_check()
-    # print(interpreter.token_lines)
 
     sleep(0.05)
     c_addr = 0
@@ -488,7 +464,6 @@ def compText(*args, step=False, refresh=False):
     if refresh:
         mem_table = step_table
         m = interpreter.memory
-        # print(*m,sep='\n')
         hex_lines = interpreter.to_hex3(m)
     elif not step:
         step_table = []
@@ -512,13 +487,6 @@ def compText(*args, step=False, refresh=False):
         m = interpreter.memory
 
         hex_lines = interpreter.to_hex3(m)
-
-        # unpack = interpreter.to_memory_2() ###OLD
-        # if unpack is None: ###OLD
-        #     print("Empty")###OLD
-        #     return###OLD
-        # _, mem_table = unpack###OLD
-        # hex_lines = interpreter.to_hex3()###OLD
     else:
         if not stepping:
             global_interpreter = inter(text_lines)
@@ -537,8 +505,6 @@ def compText(*args, step=False, refresh=False):
         m = interpreter.memory
 
         hex_lines = interpreter.to_hex3(m)
-        # bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
-        # hex_lines = [bin_to_hex(b, 4) if b != "XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
 
     if hex_lines is None:
         print("Can't compile due to error.")
