@@ -711,12 +711,16 @@ def NOP(*args, affect_mem=True):
     return format_function(29, 1, *args)
 
 
-def CALL(current_address=0, affect_mem=True):
+def CALL(address=0, affect_mem=True):
     global Memory
     if affect_mem:
         # execute the sent address but continue your program normally afterwards.
-        pass
-    return format_function(30, 3, current_address)
+        address = int(address)
+        if address % 2 != 0:
+            address += 1
+        instruction = Memory[address] + Memory[address + 1]
+        binary_to_instructions(instruction, address)
+    return format_function(30, 3, address)
 
 
 def RETURN(affect_mem=True):
