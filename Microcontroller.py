@@ -632,8 +632,8 @@ def JCONDADDR(address: int, affect_mem=True):
         global conditional_bit
         if conditional_bit == 1:
             global Registers, Program_Counter  # PC IS CURRENTLY IN DECIMAL.
-            print(address)
-            print(Memory[address])
+            # print(address)
+            # print(Memory[address])
             Program_Counter = address
             conditional_bit = 0
     return format_function(23, 3, address)
@@ -643,6 +643,7 @@ def LOOP(Ra: int, address: int, affect_mem=True):
     global Registers, Memory
     if affect_mem:
         n = hex_to_dec(Registers[Ra])
+        address = int(address)
         if address % 2 != 0:
             address += 1
         instruction = Memory[address] + Memory[address + 1]
@@ -778,9 +779,9 @@ def binary_to_instructions(b: str, address: int, write=False):
     args = [a for a in args if a != 0]
     len_args = len(inspect.signature(instruction).parameters) - 1
     if len(args) != len_args:
-        print("not instruction...")
+        # print("not instruction...")
         return
-    print(f'Running {instruction} with parameters {args}')
+    # print(f'Running {instruction} with parameters {args}')
     if write:
         write_to_memory_from_address(address, instruction(*args))
     else:

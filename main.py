@@ -349,7 +349,7 @@ class Interpreter(object):
             return None, origin
         return tokens, origin
 
-    def make_tokens_2(self, save_errors: bool = True): #old make tokens version (DELETE PENDING)
+    def make_tokens_2(self, save_errors: bool = True):  # old make tokens version (DELETE PENDING)
         token_lines: list = list()
         org: int = 0
         for i in range(len(self.lines)):
@@ -404,7 +404,7 @@ class Interpreter(object):
         self.dead = True
         # exit(code) #verify later
 
-    def to_memory(self): #old to memory (DELETE PENDING)
+    def to_memory(self):  # old to memory (DELETE PENDING)
         memory_line: list = [[]] * 256
         if not self.is_clean():
             return None
@@ -654,12 +654,12 @@ class Interpreter(object):
             self.index = 0
             set_program_counter(0)
             return None
-        set_program_counter(i+1)
+        set_program_counter(i + 1)
         if fl[i] is None or fl[i] == []:
             for index in range(i, len(fl)):
                 if fl[index] is not None and fl[index] != []:
                     i = index
-                    set_program_counter(i+1)
+                    set_program_counter(i + 1)
                     break
 
         if fl[i] is None or fl[i] == []:
@@ -779,7 +779,7 @@ class Interpreter(object):
             binary_lines.append(binary_line)
         return binary_lines
 
-    def to_bin_list(self): #old to bin list (DELETE PENDING)
+    def to_bin_list(self):  # old to bin list (DELETE PENDING)
         decimal_lines: list = self.to_decimal()
         binary_lines: list = list()
         if decimal_lines is None:
@@ -856,7 +856,7 @@ class Interpreter(object):
                         self.exit_system()
                         if self.dead:
                             return
-                    if arg == "a" and tok.TokenType != TokenType.VARIABLE:
+                    if arg == "a" and tok.TokenType != TokenType.VARIABLE and tok.TokenType != TokenType.INTEGER:
                         self.error("Expected a VARIABLE or ADDRESS, got a {typ}".format(typ=tok.TokenType.value),
                                    -1, True, instruction=token.value.upper())
                         self.exit_system()
