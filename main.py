@@ -652,7 +652,8 @@ class Interpreter(object):
 
     def next(self):
         if self.index == 0:
-            print("starting stepper....")
+            # print("starting stepper....")
+            pass
         if self.function_lines is None:
             self.create_program_counter()
             set_program_counter(0)
@@ -663,7 +664,7 @@ class Interpreter(object):
         if fl is None:
             return
         if i >= len(fl):
-            print("starting again....")
+            # print("starting again....")
             self.index = 0
             set_program_counter(0)
             return None
@@ -676,7 +677,7 @@ class Interpreter(object):
                     break
 
         if fl[i] is None or fl[i] == []:
-            print("starting again....")
+            # print("starting again....")
             self.index = 0
             set_program_counter(0)
             return None
@@ -702,7 +703,8 @@ class Interpreter(object):
 
     def next2(self):
         if self.index == 0:
-            print("starting stepper....")
+            # print("starting stepper....")
+            pass
         if self.function_lines is None:
             self.create_program_counter_2()
             set_program_counter(0)
@@ -713,7 +715,7 @@ class Interpreter(object):
         if fl is None:
             return
         if i >= len(fl):
-            print("starting again....")
+            # print("starting again....")
             self.index = 0
             set_program_counter(0)
             return None
@@ -726,7 +728,7 @@ class Interpreter(object):
                     break
 
         if fl[i] is None or fl[i] == []:
-            print("starting again....")
+            # print("starting again....")
             self.index = 0
             set_program_counter(0)
             return None

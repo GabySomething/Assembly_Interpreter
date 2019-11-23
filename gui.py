@@ -105,8 +105,8 @@ class StopLightUI(Stoplight):
         butt = Button(root, text="Set", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
                       highlightthickness=0)
         butt.place(x=x + width - 30, y=y + height, width=30, height=20)
-        butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2,label)))
-        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2,label)))
+        butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2, label)))
+        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2, label)))
 
     def clear_ui(self, canvas=None, *buttons):
         if canvas is not None:
@@ -492,13 +492,33 @@ def compText(*args, step=False, refresh=False):
         hex_lines = interpreter.to_hex3(m)
     elif not step:
         step_table = []
+        table = []
+        last_table = []
         interpreter.clear_memory()
-        unpack = interpreter.to_memory_2()
-        if unpack is None:
-            print("Empty")
-            return
-        _, mem_table = unpack
-        hex_lines = interpreter.to_hex3()
+
+        unpack = interpreter.next2()
+        c_addr = 0
+        l_addr = -2
+        while unpack is not None:
+            c_addr, t = unpack
+            if t == last_table and c_addr == l_addr:
+                print("DONE")
+                break
+            last_table = t
+            l_addr = c_addr
+            table += t
+            unpack = interpreter.next2()
+        mem_table = table
+        m = interpreter.memory
+
+        hex_lines = interpreter.to_hex3(m)
+
+        # unpack = interpreter.to_memory_2() ###OLD
+        # if unpack is None: ###OLD
+        #     print("Empty")###OLD
+        #     return###OLD
+        # _, mem_table = unpack###OLD
+        # hex_lines = interpreter.to_hex3()###OLD
     else:
         if not stepping:
             global_interpreter = inter(text_lines)

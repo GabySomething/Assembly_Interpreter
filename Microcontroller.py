@@ -618,7 +618,7 @@ def JMPADDR(*args, affect_mem=True):
         # print(args)
         # print(bin_to_dec(Memory[args[0]]) )
         Program_Counter = args[0]  # set program counter to Content of Ra
-        print(f'New program counter = {args[0]}')
+        # print(f'New program counter = {args[0]}')
         # Program_Counter = 999
         # we need to specify n bits for program counter
         # pass
