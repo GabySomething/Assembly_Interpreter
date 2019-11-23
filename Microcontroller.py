@@ -37,8 +37,9 @@ def get_register_table():
         if i == 7:
             Registers[i] = Program_Counter
         value = Registers[i]
-        if i == 3 or i == 4:
-            value = hex_to_bin(value, 8)
+        # value = str(value).zfill(4)
+        # if i == 3 or i == 4:
+        #     value = hex_to_bin(value, 8)
         if Registers[i] == pastRegisters[i]:
             result += f'R{i} :\t {value}\n'
         else:

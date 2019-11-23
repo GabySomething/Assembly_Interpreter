@@ -988,6 +988,7 @@ class Interpreter(object):
         return get_memory()
 
     def clear_memory(self):
+        set_program_counter(0)
         clear_memory()
 
     def to_bin(self):
