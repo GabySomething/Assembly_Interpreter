@@ -524,8 +524,8 @@ def NEG(Ra: int, R1: int, affect_mem=True):
 def SHIFTR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        shifts = hex_to_dec(Registers[R2])
-        b = hex_to_bin(Registers[1])
+        shifts = hex_to_dec(Registers[R1])
+        b = hex_to_bin(Registers[R2])
         if shifts >= len(b):
             Registers[Ra] = "0" * 8
             return format_function(16, 1, Ra, R1, R2)
@@ -542,14 +542,18 @@ def SHIFTR(Ra: int, R1: int, R2: int, affect_mem=True):
 def SHIFTL(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        shifts = hex_to_dec(Registers[R2])
-        b = hex_to_bin(Registers[1])
+        shifts = hex_to_dec(Registers[R1])
+        b = hex_to_bin(Registers[R2],8)
+        print(b,shifts)
         if shifts >= len(b):
+            print(":c")
             Registers[Ra] = "0" * 8
             return format_function(17, 1, Ra, R1, R2)
         shifts %= len(b)
-        b = b[:shifts] + "0" * shifts
+        # b = b[:shifts] + "0" * shifts
+        b = b[shifts:]+"0"*shifts
         h = bin_to_hex(b, 4)
+        print(b,h)
         if Ra != 0:
             Registers[Ra] = h
         else:
@@ -560,8 +564,8 @@ def SHIFTL(Ra: int, R1: int, R2: int, affect_mem=True):
 def ROTAR(Ra: int, R1: int, R2: int, affect_mem=True):
     global Registers
     if affect_mem:
-        shifts = hex_to_dec(Registers[R2])
-        b = hex_to_bin(Registers[1])
+        shifts = hex_to_dec(Registers[R1])
+        b = hex_to_bin(Registers[R2])
         shifts %= len(b)
         b = b[-shifts:] + b[:-shifts]
         h = bin_to_hex(b, 4)
