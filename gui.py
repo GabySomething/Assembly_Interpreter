@@ -474,10 +474,14 @@ def compText(*args, step=False, refresh=False):
         unpack = interpreter.next2()
         c_addr = 0
         l_addr = -2
+        count = 0
         while unpack is not None:
             c_addr, t = unpack
             if t == last_table and c_addr == l_addr:
-                print("DONE")
+                count+=1
+                # print("DONE")
+                # break
+            if count>=2:
                 break
             last_table = t
             l_addr = c_addr

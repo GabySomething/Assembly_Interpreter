@@ -365,7 +365,7 @@ class Interpreter(object):
             elif tokens[0].TokenType == TokenType.CONST_ASSIGN:
                 self.variables[tokens[1].value] = tokens[2].value
             elif tokens[0].TokenType == TokenType.LABEL:
-                self.variables[tokens[0].value] = tokens[0].org
+                self.variables[tokens[0].value] = hexadecimal(tokens[0].org)  ### TODO last modification
             token_lines.append(tokens)
         self.token_lines = token_lines
         return token_lines
@@ -677,6 +677,7 @@ class Interpreter(object):
         set_program_counter(bk)
         if current[0] == "INSTR":
             opcode = current[4]
+            args = [hex_to_dec(arg) for arg in args]
             write_to_memory_from_address(addr, instruction(*args))
             table = [f"INSTR | {instructions[opcode]} {args}"]
         elif current[0] == "DB":
