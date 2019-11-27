@@ -36,13 +36,19 @@ def get_register_table():
         if i == 7:
             Registers[i] = Program_Counter
         value = Registers[i]
+        l_value = value
+        # print(f'R{i} = {value}')
+        value = hexadecimal(int(str(value),16)%256)
+        note = ''
+        if str(l_value) != str(value):
+            note = '\t<Modulated to 8-bit>'
         # value = str(value).zfill(4)
         # if i == 3 or i == 4:
         #     value = hex_to_bin(value, 8)
         if Registers[i] == pastRegisters[i]:
-            result += f'R{i} :\t {value}\n'
+            result += f'R{i} :\t {value}{note}\n'
         else:
-            result += f' *R{i} :\t {value}\n'
+            result += f' *R{i} :\t {value}{note}\n'
         pastRegisters[i] = Registers[i]
 
     result += f'conditional_bit :\t {conditional_bit}\n'
@@ -419,7 +425,9 @@ def STORE(R: int, address: int, affect_mem=True):
     # address = hex_to_dec(address)
     global Memory, Registers
     if affect_mem:
-        store = hex_to_bin(Registers[R], 8)
+        fix = hex_to_dec(Registers[R])%256
+        fix = hexadecimal(fix)
+        store = hex_to_bin(fix, 8)
         # print(f'Storing {store} from R{R} into Memory address:{address}')
         Memory[address] = store
     return format_function(3, 2, R, address)

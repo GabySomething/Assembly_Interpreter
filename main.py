@@ -678,8 +678,9 @@ class Interpreter(object):
         if current[0] == "INSTR":
             opcode = current[4]
             args = [hex_to_dec(arg) for arg in args]
+            hexargs = [hexadecimal(arg) for arg in args] ##This line remove any unnecesary zeroes infront
             write_to_memory_from_address(addr, instruction(*args))
-            table = [f"INSTR | {instructions[opcode]} {args}"]
+            table = [f"INSTR | {instructions[opcode]} {hexargs}"]
         elif current[0] == "DB":
             # print(*args)
             instruction(addr, *args)

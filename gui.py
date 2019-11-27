@@ -436,10 +436,11 @@ def show_line_numbers(text: Text, line_num):
             line_num[i] = label
 
         if line_num == line_numbers_hex:
+            txt = hex(i*2)[2:].upper()
             if text_lines[i] != "0000":
-                line_num[i].config(bg=rgb(0, 0, 50), fg=rgb(0, 255, 255), text=str(i * 2))
+                line_num[i].config(bg=rgb(0, 0, 50), fg=rgb(0, 255, 255), text=txt)
             else:
-                line_num[i].config(bg=rgb(10, 10, 10), fg=rgb(125, 125, 125), text=str(i * 2))
+                line_num[i].config(bg=rgb(10, 10, 10), fg=rgb(125, 125, 125), text=txt)
         elif line_num == line_numbers_hex:
             line_num[i].config(bg=rgb(25, 25, 25), fg='white')
         line_num[i].place(x=0, y=y + yoffset, height=height, width=label_width)
