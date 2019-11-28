@@ -7,6 +7,7 @@ pastRegisters = ["0"] * 8
 Buffer = ["0" * 8 for i in range(4)]
 Program_Counter = 0  # THE NEXT INSTRUCTION
 conditional_bit = 0
+Stack = []
 
 
 def set_program_counter(value):
@@ -22,6 +23,14 @@ def get_program_counter():
 def get_memory():
     global Memory
     return Memory
+
+def get_stack():
+    global Stack
+    return Stack
+
+def set_stack(stack):
+    global Stack
+    Stack = stack
 
 
 def get_registers():
@@ -766,16 +775,23 @@ def CALL(address=0, affect_mem=True):
     if affect_mem:
         # execute the sent address but continue your program normally afterwards.
         address = int(address)
+        Stack.append(Program_Counter)
         if address % 2 != 0:
             address += 1
-        instruction = Memory[address] + Memory[address + 1]
-        binary_to_instructions(instruction, address)
+        set_program_counter(address)
+        # instruction = Memory[address] + Memory[address + 1]
+        # binary_to_instructions(instruction, address)
     return format_function(30, 3, address)
 
 
 def RETURN(affect_mem=True):
     if affect_mem:
-        pass
+        if len(Stack) < 1:
+            return format_function(31, 3)
+        addr = Stack.pop()
+        if addr is not None:
+            set_program_counter(addr+1)
+        # pass
     return format_function(31, 3)
 
 

@@ -6,7 +6,7 @@ from main import Interpreter as inter
 from main import sliceAssig, instructions, bin_to_hex
 from time import sleep
 from Microcontroller import Stoplight, Seven_Segment, get_memory, ASCII_Characters, write_to_memory_from_address, \
-    hex_to_bin
+    hex_to_bin, hexadecimal
 
 global_interpreter = None
 stepping = False
@@ -92,7 +92,7 @@ class StopLightUI(Stoplight):
             binary_setter.insert("1.0", self.memory[0])
         address_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
         address_setter.place(x=x, y=y + height + 20, width=40, height=20)
-        address_setter.insert('1.0', self.address)
+        address_setter.insert('1.0', hexadecimal(self.address))
         butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
                        highlightthickness=0)
         butt2.place(x=x + 40, y=y + height + 20, width=60, height=20)
@@ -123,6 +123,7 @@ class StopLightUI(Stoplight):
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
+        addr = str(int(str(addr), 16))
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -187,7 +188,7 @@ class SevenSegmentUI(Seven_Segment):
             binary_setter.insert("1.0", self.memory[0])
         address_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
         address_setter.place(x=x, y=y + height + 20, width=40, height=20)
-        address_setter.insert('1.0', self.address)
+        address_setter.insert('1.0', hexadecimal(self.address))
         butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
                        highlightthickness=0)
         butt2.place(x=x + 40, y=y + height + 20, width=60, height=20)
@@ -218,6 +219,7 @@ class SevenSegmentUI(Seven_Segment):
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
+        addr = str(int(str(addr), 16))
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -252,7 +254,7 @@ class ASCIICharactersUI(ASCII_Characters):
 
         address_setter = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
         address_setter.place(x=x, y=y + height, width=40, height=20)
-        address_setter.insert('1.0', self.address)
+        address_setter.insert('1.0', hexadecimal(self.address))
         butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
                        highlightthickness=0)
         butt2.place(x=x + 40, y=y + height, width=60, height=20)
@@ -264,6 +266,7 @@ class ASCIICharactersUI(ASCII_Characters):
                 b.destroy()
 
     def set_address(self, addr, *buttons):
+        addr = str(int(str(addr), 16))
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -386,7 +389,7 @@ class HexKeyboard(object):
             b = self.buttons[i]
             b.place(x=x, y=y, width=40, height=20)
         self.buttons[20].place(x=self.x, y=5 * 20 + self.y + 20, width=width, height=20)
-        self.buttons[20].config(text=f"ADDR: {self.address}")
+        self.buttons[20].config(text=f"ADDR: {hexadecimal(self.address)}")
 
 
 def highlight_text(txt, tag_name, lineno, start_char, end_char, bg_color=None, fg_color=None, bold=False):
