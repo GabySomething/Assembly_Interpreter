@@ -158,26 +158,24 @@ class SevenSegmentUI(Seven_Segment):
         x = self.x
         y = self.y
 
-
         L = [(0, 0, 0) if not i else (0, 255, 0) for i in self.lights]
         a = [rgb(*tuple_mult(l, int(self.control))) for l in L]
         b = [rgb(*tuple_mult(l, int(not self.control))) for l in L]
 
+        canvas.create_rectangle(10, 10, 10, 57, fill=a[5], outline=a[5], width=0)  # 5
+        canvas.create_rectangle(10, 10, 10 + 60, 10, fill=a[0], outline=a[0], width=0)  # 0
+        canvas.create_rectangle(10 + 60, 10, 10 + 60, 57, fill=a[1], outline=a[1], width=0)  # 1
+        canvas.create_rectangle(10 + 60, 57, 10 + 60, 57 + 57, fill=a[2], outline=a[2], width=0)  # 2
+        canvas.create_rectangle(10, 57 + 57, 10 + 60, 57 + 57, fill=a[3], outline=a[3], width=0)  # 3
+        canvas.create_rectangle(10, 57, 10, 57 + 57, fill=a[4], outline=a[4], width=0)  # 4
+        canvas.create_rectangle(10, 57, 10 + 60, 57, fill=a[6], outline=a[6], width=0)  # 6
 
-        canvas.create_rectangle(10, 10, 10, 57, fill=a[0], outline=a[0], width=0)
-        canvas.create_rectangle(10, 10, 10 + 60, 10, fill=a[1], outline=a[1], width=0)
-        canvas.create_rectangle(10 + 60, 10, 10 + 60, 57, fill=a[2], outline=a[2], width=0)
-        canvas.create_rectangle(10 + 60, 57, 10 + 60, 57 + 57, fill=a[3], outline=a[3], width=0)
-        canvas.create_rectangle(10, 57 + 57, 10 + 60, 57 + 57, fill=a[4], outline=a[4], width=0)
-        canvas.create_rectangle(10, 57, 10, 57 + 57, fill=a[5], outline=a[5], width=0)
-        canvas.create_rectangle(10, 57, 10 + 60, 57, fill=a[6], outline=a[6], width=0)
-
-        canvas.create_rectangle(10 + 70, 10, 10 + 70, 10 + 57, fill=b[0], outline=b[0], width=0)
-        canvas.create_rectangle(10 + 70, 10, 10 + 130, 10, fill=b[1], outline=b[1], width=0)
-        canvas.create_rectangle(10 + 70 + 60, 10, 10 + 70 + 60, 10 + 57, fill=b[2], outline=b[2], width=0)
-        canvas.create_rectangle(10 + 70 + 60, 57, 10 + 70 + 60, 57 + 57, fill=b[3], outline=b[3], width=0)
-        canvas.create_rectangle(10 + 70, 57 + 57, 10 + 130, 57 + 57, fill=b[4], outline=b[4], width=0)
-        canvas.create_rectangle(10 + 70, 57, 10 + 70, 57 + 57, fill=b[5], outline=b[5], width=0)
+        canvas.create_rectangle(10 + 70, 10, 10 + 70, 10 + 57, fill=b[5], outline=b[5], width=0)
+        canvas.create_rectangle(10 + 70, 10, 10 + 130, 10, fill=b[0], outline=b[0], width=0)
+        canvas.create_rectangle(10 + 70 + 60, 10, 10 + 70 + 60, 10 + 57, fill=b[1], outline=b[1], width=0)
+        canvas.create_rectangle(10 + 70 + 60, 57, 10 + 70 + 60, 57 + 57, fill=b[2], outline=b[2], width=0)
+        canvas.create_rectangle(10 + 70, 57 + 57, 10 + 130, 57 + 57, fill=b[3], outline=b[3], width=0)
+        canvas.create_rectangle(10 + 70, 57, 10 + 70, 57 + 57, fill=b[4], outline=b[4], width=0)
         canvas.create_rectangle(10 + 70, 57, 10 + 130, 57, fill=b[6], outline=b[6], width=0)
 
         canvas.place(x=x, y=y)
@@ -439,7 +437,7 @@ def show_line_numbers(text: Text, line_num):
             line_num[i] = label
 
         if line_num == line_numbers_hex:
-            txt = hex(i*2)[2:].upper()
+            txt = hex(i * 2)[2:].upper()
             if text_lines[i] != "0000":
                 line_num[i].config(bg=rgb(0, 0, 50), fg=rgb(0, 255, 255), text=txt)
             else:
@@ -468,7 +466,7 @@ def compText(*args, step=False, refresh=False):
     if refresh:
         mem_table = step_table
         m = interpreter.memory
-        hex_lines = interpreter.to_hex3(m)
+        hex_lines = interpreter.to_hex3(m, False)
     elif not step:
         step_table = []
         table = []
@@ -482,10 +480,10 @@ def compText(*args, step=False, refresh=False):
         while unpack is not None:
             c_addr, t = unpack
             if t == last_table and c_addr == l_addr:
-                count+=1
+                count += 1
                 # print("DONE")
                 # break
-            if count>=2:
+            if count >= 2:
                 break
             last_table = t
             l_addr = c_addr

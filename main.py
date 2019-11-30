@@ -359,13 +359,12 @@ class Interpreter(object):
                 continue
             if any(t.TokenType == TokenType.LIST_ASSIGN for t in tokens):
                 if tokens[0].TokenType == TokenType.VARIABLE:
-                    self.variables[tokens[0].value] = [
-                        t.org if not t.constant or not t.TokenType == TokenType.REGISTER else t.value for t in
-                        tokens[2:]]
-            elif tokens[0].TokenType == TokenType.CONST_ASSIGN:
+                    self.variables[tokens[0].value] = tokens[
+                        2].org  # [t.org if not t.constant or not t.TokenType == TokenType.REGISTER else t.value for t in tokens[2:]]
+            elif tokens[0].TokenType == TokenType.CONST_ASSIGN:  ## TODO ^^^ changed so vars only contain one value
                 self.variables[tokens[1].value] = tokens[2].value
             elif tokens[0].TokenType == TokenType.LABEL:
-                self.variables[tokens[0].value] = hexadecimal(tokens[0].org)  ### TODO last modification
+                self.variables[tokens[0].value] = hexadecimal(tokens[0].org)  ### TODO hex modification
             token_lines.append(tokens)
         self.token_lines = token_lines
         return token_lines
@@ -461,10 +460,11 @@ class Interpreter(object):
                 result.append(var)
         return result
 
-    def to_memory_2(self):
+    def to_memory_2(self, reset_index=True):
         table = []
         self.function_lines = None
-        self.index = 0
+        if reset_index:
+            self.index = 0
         if not self.is_clean():
             clear_memory()
             print("Cleared memory")
@@ -678,7 +678,7 @@ class Interpreter(object):
         if current[0] == "INSTR":
             opcode = current[4]
             args = [hex_to_dec(arg) for arg in args]
-            hexargs = [hexadecimal(arg) for arg in args] ##This line remove any unnecesary zeroes infront
+            hexargs = [hexadecimal(arg) for arg in args]  ##This line remove any unnecesary zeroes infront
             write_to_memory_from_address(addr, instruction(*args))
             table = [f"INSTR | {instructions[opcode]} {hexargs}"]
         elif current[0] == "DB":
@@ -852,8 +852,10 @@ class Interpreter(object):
                 for line_index in range(len(arg_types)):
                     tok: Token = line[line_index + token_pos + 1]
                     arg = arg_types[line_index]
-                    if arg == "r" and tok.TokenType != TokenType.REGISTER:
-                        self.error("Expected a REGISTER, got a {typ}".format(typ=tok.TokenType.value), -1, True,
+                    if arg == "r" and tok.TokenType != TokenType.REGISTER: # and line_index == 0 and tok.TokenType != TokenType.INTEGER:
+                        self.error("Expected a REGISTER in argument {num}, got a {typ}".format(num=line_index,
+                                                                                               typ=tok.TokenType.value),
+                                   -1, True,
                                    instruction=token.value.upper())
                         self.exit_system()
                         if self.dead:
@@ -892,10 +894,10 @@ class Interpreter(object):
         except TypeError:
             print("...")
 
-    def to_hex3(self, m=None):
+    def to_hex3(self, m=None, reset_index=True):
         # clear_memory()
         if m is None:
-            m, _ = self.to_memory_2()
+            m, _ = self.to_memory_2(reset_index)
         try:
             bin_memory = [m[i] + m[i + 1] for i in range(0, len(m), 2)]
             hm = [bin_to_hex(b, 4) if b != "XXXXXXXXXXXXXXXX" else "XXXX" for b in bin_memory]
