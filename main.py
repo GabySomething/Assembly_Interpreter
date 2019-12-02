@@ -827,14 +827,14 @@ class Interpreter(object):
             token: Token = None
             token_pos = 0
             label = 0
-            for line_index in range(len(line)):
-                tok: Token = line[line_index]
+            for arg_index in range(len(line)):
+                tok: Token = line[arg_index]
                 if tok.TokenType == TokenType.LABEL:
                     label += 1
                     continue
                 if tok.TokenType == TokenType.INSTRUCTION:
                     token = tok
-                    token_pos = line_index
+                    token_pos = arg_index
                     break
             if token is not None:
                 index = instructions.index(token.value.upper())
@@ -849,12 +849,11 @@ class Interpreter(object):
                         return
                 if arg_number == 0:
                     continue
-                for line_index in range(len(arg_types)):
-                    tok: Token = line[line_index + token_pos + 1]
-                    arg = arg_types[line_index]
-                    if arg == "r" and tok.TokenType != TokenType.REGISTER: # and line_index == 0 and tok.TokenType != TokenType.INTEGER:
-                        self.error("Expected a REGISTER in argument {num}, got a {typ}".format(num=line_index,
-                                                                                               typ=tok.TokenType.value),
+                for arg_index in range(len(arg_types)):
+                    tok: Token = line[arg_index + token_pos + 1]
+                    arg = arg_types[arg_index]
+                    if arg == "r" and tok.TokenType != TokenType.REGISTER and arg_index == 0 or tok.TokenType == TokenType.LABEL:
+                        self.error("Expected a REGISTER in argument {num}, got a {typ}".format(num=arg_index, typ=tok.TokenType.value),
                                    -1, True,
                                    instruction=token.value.upper())
                         self.exit_system()

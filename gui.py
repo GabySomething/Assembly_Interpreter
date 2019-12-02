@@ -46,6 +46,14 @@ def tuple_mult(t, scalar):
     return [e * scalar for e in t]
 
 
+def refresh_outputs():
+    global outputs
+    for output in outputs:
+        if hasattr(output, 'set_address'):
+            output.set_address(output.address)
+        output.render
+
+
 def tk_pos(line: int, index: int):
     return f'{line}.{index}'
 
@@ -268,7 +276,7 @@ class ASCIICharactersUI(ASCII_Characters):
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
-            print("no")
+            # print("no")
             self.address = -1
             self.memory = ['00000000'] * 8
             return
@@ -404,6 +412,19 @@ def delText(*args):
     text_hex.delete('1.0', END)
     show_line_numbers(text_hex, line_numbers_hex)
     text_hex.config(state=DISABLED)
+    compText()
+
+
+def stop_stepper(*args):
+    text_lines = text.get("1.0", END).replace('\n\n','\n')
+    if text_lines is None:
+        return
+    if text_lines.isspace():
+        return
+    text.delete('1.0', END)
+    compText()
+    text.insert('1.0',text_lines)
+    formatText(text)
 
 
 def cleanText(*args):
@@ -448,7 +469,7 @@ def show_line_numbers(text: Text, line_num):
 
 
 def compText(*args, step=False, refresh=False):
-    global line_numbers_hex, global_interpreter, stepping, step_table
+    global line_numbers_hex, global_interpreter, stepping, step_table, outputs
     text_hex.config(state=NORMAL)
     text_tables.config(state=NORMAL)
     text_hex.delete("1.0", END)
@@ -504,6 +525,8 @@ def compText(*args, step=False, refresh=False):
             print("Stepping is done")
             step_table = []
             stepping = False
+            refresh_outputs()
+            compText(refresh=True)
             return
         c_addr, table = unpack
         step_table += table
@@ -536,6 +559,7 @@ def compText(*args, step=False, refresh=False):
     text_tables.config(state=DISABLED)
     text_hex.config(state=DISABLED)
     show_line_numbers(text_hex, line_numbers_hex)
+    refresh_outputs()
 
 
 def formatText(text: Text):
@@ -721,11 +745,13 @@ butt_save_project = Button(root, bg=rgb(25, 25, 25), fg="white", text="Save Proj
 butt_open_project = Button(root, bg=rgb(25, 25, 25), fg="white", text="Open Project", command=file_open_project,
                            highlightthickness=0)
 butt_clear = Button(root, bg="red", fg="white", text="Clear", command=delText, highlightthickness=0)
+butt_stop_stepper = Button(root, bg="purple", fg="white", text="Stop", command=stop_stepper, highlightthickness=0)
+
 butt_format = Button(root, bg="blue", fg="white", text="Format Text", command=cleanText, highlightthickness=0)
 
 butt_show_mem = Button(root, bg=rgb(25, 25, 25), fg="white", text="Show Full Memory", command=toggle_mem,
                        highlightthickness=0, font=(Font, Font_Size - 3))
-butt_compile = Button(root, bg=rgb(0, 125, 0), fg="white", text="Compile", command=compText, highlightthickness=0)
+butt_compile = Button(root, bg=rgb(0, 125, 0), fg="white", text="Run", command=compText, highlightthickness=0)
 butt_step = Button(root, bg=rgb(100, 125, 0), fg="white", text="Step", command=(lambda: compText(step=True)),
                    highlightthickness=0)
 butt_save.place(x=40, y=0, width=65, height=20)
@@ -733,9 +759,11 @@ butt_show_mem.place(x=0, y=630, width=150, height=20)
 butt_format.place(x=150, y=630, width=150, height=20)
 butt_save_project.place(x=150, y=0, width=80, height=20)
 butt_open_project.place(x=230, y=0, width=80, height=20)
-butt_compile.place(x=310, y=0, width=60, height=20)
-butt_step.place(x=370, y=0, width=80, height=20)
-butt_clear.place(x=450, y=0, width=80, height=20)
+butt_compile.place(x=310, y=0, width=50, height=20)
+butt_step.place(x=360, y=0, width=50, height=20)
+butt_stop_stepper.place(x=410, y=0, width=50, height=20)
+butt_clear.place(x=460, y=0, width=50, height=20)
+
 sl = StopLightUI(-1, 595, 20)
 ss = SevenSegmentUI(-1, 570, 210)
 sl.render()
@@ -744,4 +772,5 @@ asc = ASCIICharactersUI(-1, 596, 400)
 asc.render()
 keyboard = HexKeyboard(0, 565, 460)
 keyboard.render()
+outputs = [keyboard, asc, ss, sl]
 root.mainloop()
