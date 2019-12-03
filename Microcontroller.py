@@ -437,7 +437,7 @@ def STORE(R: int, address: int, affect_mem=True):
         fix = hex_to_dec(Registers[R])%256
         fix = hexadecimal(fix)
         store = hex_to_bin(fix, 8)
-        # print(f'Storing {store} from R{R} into Memory address:{address}')
+        print(f'Storing {store} from R{R} into Memory address:{address}')
         Memory[address] = store
     return format_function(3, 2, R, address)
 

@@ -14,7 +14,7 @@ step_table = []
 Font = "Courier New"  # Courier New
 Font_Size = 12
 Show_Full_Memory = False
-
+write_queue = []
 regex_instr = "|".join(instructions[::-1])
 line_numbers = []
 line_numbers_hex = [None] * 2048
@@ -108,7 +108,7 @@ class StopLightUI(Stoplight):
                       highlightthickness=0)
         butt.place(x=x + width - 30, y=y + height, width=30, height=20)
         butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2, label)))
-        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2, label)))
+        butt2.config(command=(lambda: self.set_address(int(str(address_setter.get("1.0", "1.5")),16), canvas, butt, butt2, label)))
 
     def clear_ui(self, canvas=None, *buttons):
         if canvas is not None:
@@ -131,7 +131,8 @@ class StopLightUI(Stoplight):
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
-        addr = str(int(str(addr), 16))
+        # addr = str(int(str(addr), 16))
+        addr = str(addr)
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -202,7 +203,7 @@ class SevenSegmentUI(Seven_Segment):
                       highlightthickness=0)
         butt.place(x=x + width - 30, y=y + height, width=30, height=20)
         butt.config(command=(lambda: self.set_memory(binary_setter.get("1.0", "1.8"), canvas, butt, butt2)))
-        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), canvas, butt, butt2)))
+        butt2.config(command=(lambda: self.set_address(int(str(address_setter.get("1.0", "1.5")),16), canvas, butt, butt2)))
 
     def clear_ui(self, canvas=None, *buttons):
         if canvas is not None:
@@ -225,7 +226,8 @@ class SevenSegmentUI(Seven_Segment):
         self.render()
 
     def set_address(self, addr, canvas=None, *buttons):
-        addr = str(int(str(addr), 16))
+        addr = str(addr)
+        # addr = str(int(str(addr), 16))
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -264,7 +266,7 @@ class ASCIICharactersUI(ASCII_Characters):
         butt2 = Button(root, text="Set Addr", bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 3),
                        highlightthickness=0)
         butt2.place(x=x + 40, y=y + height, width=60, height=20)
-        butt2.config(command=(lambda: self.set_address(address_setter.get("1.0", "1.5"), butt2)))
+        butt2.config(command=(lambda: self.set_address(int(str(address_setter.get("1.0", "1.5")),16), butt2)))
 
     def clear_ui(self, *buttons):
         for b in buttons:
@@ -272,7 +274,8 @@ class ASCIICharactersUI(ASCII_Characters):
                 b.destroy()
 
     def set_address(self, addr, *buttons):
-        addr = str(int(str(addr), 16))
+        # addr = str(int(str(addr), 16))
+        addr = str(addr)
         if re.match(r'^[\d]+$', addr):
             addr = int(addr)
         else:
@@ -287,6 +290,17 @@ class ASCIICharactersUI(ASCII_Characters):
         self.set_values()
         self.render()
 
+def add_to_write_queue(addr, string):
+    write_queue.append((addr,string))
+
+def empty_write_queue():
+    global write_queue
+    for tup in write_queue:
+        print(f'Writing to {tup[0]}:  {tup[1]}')
+        if tup[0] <= -1:
+            continue
+        write_to_memory_from_address(tup[0],tup[1])
+    write_queue = []
 
 class HexKeyboard(object):
     def __init__(self, addr, x, y):
@@ -354,25 +368,35 @@ class HexKeyboard(object):
         b = Button(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 4), text=f'Clear')
         b.config(command=(lambda: self.clearText()))
         self.buttons.append(b)
-        b = Label(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 2), text=f'ADDR: 0')
+        b3 = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
+        b3.insert('1.0', '-1')
+        b = Button(root, bg=rgb(25, 125, 25), fg='white', font=(Font, Font_Size - 2), text=f'Set Addr:')
+        b.config(command=(lambda: self.set_address(int(b3.get('1.0',END),16))))
+        # b = Label(root, bg=rgb(100, 25, 25), fg='white', font=(Font, Font_Size - 2), text=f'ADDR: 0')
         self.buttons.append(b)
+        self.buttons.append(b3)
         self.text = Text(root, bg=rgb(125, 125, 125), fg='white', font=(Font, Font_Size - 2), highlightthickness=0)
         self.text.config(state=DISABLED)
 
     def move_addr(self, val):
-        self.address = min(max(0, self.address + val), 4095)
+        self.address = min(max(-1, self.address + val), 4095)
+        self.render()
+
+    def set_address(self, addr):
+        self.address = min(max(-1, addr), 4095)
         self.render()
 
     def setText(self):
-        if global_interpreter is not None:
-            compText(refresh=True)
+        # if global_interpreter is not None:
+        #     compText(refresh=True)
 
         txt = self.text.get('1.0', END)
         # print(txt)
         if len(txt.strip()) == 0:
             return
-        write_to_memory_from_address(self.address, hex_to_bin(txt).zfill(8))
-        compText(refresh=True)
+        add_to_write_queue(self.address,hex_to_bin(txt).zfill(8))
+        # write_to_memory_from_address(self.address, hex_to_bin(txt).zfill(8))
+        # compText(refresh=True)
 
     def sendText(self, txt):
         txt = str(txt)
@@ -394,8 +418,11 @@ class HexKeyboard(object):
             y = (i // 4) * 20 + self.y + 20
             b = self.buttons[i]
             b.place(x=x, y=y, width=40, height=20)
-        self.buttons[20].place(x=self.x, y=5 * 20 + self.y + 20, width=width, height=20)
-        self.buttons[20].config(text=f"ADDR: {hexadecimal(self.address)}")
+        self.buttons[20].place(x=self.x, y=5 * 20 + self.y + 20, width=width*(3/4), height=20)
+        self.buttons[20].config(text=f"Set Addr: ")
+        self.buttons[21].place(x=self.x+width*(3/4), y=5 * 20 + self.y + 20, width=width / 4, height=20)
+        self.buttons[21].delete('1.0', END)
+        self.buttons[21].insert('1.0', f"{hexadecimal(self.address)}")
 
 
 def highlight_text(txt, tag_name, lineno, start_char, end_char, bg_color=None, fg_color=None, bold=False):
@@ -485,15 +512,19 @@ def compText(*args, step=False, refresh=False):
     c_addr = 0
     hex_lines = None
     if refresh:
+        prog_counter = interpreter.get_program_counter()
         mem_table = step_table
         m = interpreter.memory
+        empty_write_queue()
         hex_lines = interpreter.to_hex3(m, False)
+        interpreter.set_program_counter(prog_counter)
     elif not step:
         step_table = []
         table = []
         last_table = []
         interpreter.clear_memory()
-
+        interpreter.clear_error_set()
+        empty_write_queue()
         unpack = interpreter.next2()
         c_addr = 0
         l_addr = -2
@@ -519,7 +550,9 @@ def compText(*args, step=False, refresh=False):
             global_interpreter = inter(text_lines)
             interpreter = global_interpreter
             interpreter.clear_memory()
+            interpreter.clear_error_set()
         stepping = True
+        empty_write_queue()
         unpack = interpreter.next2()
         if unpack is None:
             print("Stepping is done")
@@ -543,9 +576,9 @@ def compText(*args, step=False, refresh=False):
     for hox in hex_lines:
         text_hex.insert(END, hox + "\n")
 
-    if stepping:
-        text_tables.insert(END, f'PC |\t{interpreter.get_program_counter()}\n')
-    for k in mem_table + interpreter.get_register_table().split("\n"):
+    # if stepping:
+    #     text_tables.insert(END, f'PC |\t{interpreter.get_program_counter()}\n')
+    for k in interpreter.get_register_table().split("\n") + mem_table +['\n'] + interpreter.get_error_set().split('\n'):
         if k is None:
             continue
         if type(k) == list:
@@ -770,7 +803,7 @@ sl.render()
 ss.render()
 asc = ASCIICharactersUI(-1, 596, 400)
 asc.render()
-keyboard = HexKeyboard(0, 565, 460)
+keyboard = HexKeyboard(-1, 565, 460)
 keyboard.render()
 outputs = [keyboard, asc, ss, sl]
 root.mainloop()

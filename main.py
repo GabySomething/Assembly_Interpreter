@@ -61,6 +61,7 @@ class Interpreter(object):
         self.text = text
         self.dead = False
         self.errors = {}
+        self.error_set = set()
         self.lines: list = list()
         self.token_lines = list()
         self.index = 0
@@ -125,16 +126,24 @@ class Interpreter(object):
 
     def error(self, error: str, line_index: int = -1, save_errors: bool = True, is_warning: bool = False,
               no_line: bool = False, instruction: str = ""):
+        start = 'WARNING: ' if is_warning else 'ERROR: '
         if not no_line and line_index > 0:
             error += "\nNEAR LINE: " + str(line_index + 1)
         if instruction.strip() is not "":
             error += "\nINSTRUCTION: " + instruction
+        self.error_set.add(start+error)
         if save_errors and not is_warning:
             self.errors[line_index] = "ERROR: " + error
         elif is_warning:
             self.warnings[line_index] = "WARNING: " + error
         else:
             print(error)
+
+    def get_error_set(self):
+        return "\n".join(self.error_set)
+
+    def clear_error_set(self):
+        self.error_set = set()
 
     def set_origin_in_list(self, l: list, org: int, increasing_origin=False):
         for token in l:
@@ -359,8 +368,8 @@ class Interpreter(object):
                 continue
             if any(t.TokenType == TokenType.LIST_ASSIGN for t in tokens):
                 if tokens[0].TokenType == TokenType.VARIABLE:
-                    self.variables[tokens[0].value] = tokens[
-                        2].org  # [t.org if not t.constant or not t.TokenType == TokenType.REGISTER else t.value for t in tokens[2:]]
+                    self.variables[tokens[0].value] = hexadecimal(tokens[
+                        2].org)  # [t.org if not t.constant or not t.TokenType == TokenType.REGISTER else t.value for t in tokens[2:]]
             elif tokens[0].TokenType == TokenType.CONST_ASSIGN:  ## TODO ^^^ changed so vars only contain one value
                 self.variables[tokens[1].value] = tokens[2].value
             elif tokens[0].TokenType == TokenType.LABEL:
